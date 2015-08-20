@@ -1,0 +1,2 @@
+#!/usr/bin/env 9 rc
+git diff $* | cut -c1-120 | showlinenum.awk 'show_path=1' >[2]/dev/null 

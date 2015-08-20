@@ -1,0 +1,27 @@
+#!/usr/bin/python
+import sys, os
+import re
+import subprocess
+
+lines = subprocess.Popen("elm make --warn App.elm", shell=True, stderr=subprocess.PIPE).stderr.readlines()
+
+filename_re = re.compile('---+ (.+\.elm)$')
+linenum_re = re.compile('^([0-9]+)\|')
+
+current_file = "App.elm"
+indent_next_line = 0
+for line in lines:
+	match = filename_re.search(line)
+	if match:
+		current_file = os.path.normpath(match.group(1))
+
+	match = linenum_re.match(line)
+	if match:
+		print re.sub(linenum_re, current_file + r':\1|', line),
+
+		indent_next_line = len(current_file) + 1 # 'filename:' gets prepended
+	else:
+		print " " * indent_next_line + line,
+		indent_next_line = 0
+
+# elm make App.elm |[2] sed 's/^([0-9]+)\|/App.elm:\1|>/g'

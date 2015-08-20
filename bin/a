@@ -1,0 +1,2 @@
+#!/usr/bin/env 9 rc
+ag $* | cut -c1-120 | nobs

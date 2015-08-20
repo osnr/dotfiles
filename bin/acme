@@ -1,0 +1,10 @@
+#!/bin/sh
+. ~/.profile
+. ~/.bashrc
+export PAGER=nobs
+export PLAN9=/usr/local/Cellar/plan9port/20140306/libexec
+export SHELL=$PLAN9/bin/rc
+export EDITOR=E
+export prompt="; "
+9 plumber
+9 acme -a -F /mnt/font/Verdana/14a/font -f /mnt/font/Monaco/12a/font

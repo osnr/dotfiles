@@ -1,0 +1,90 @@
+#!/usr/bin/env python
+"""
+from https://gist.github.com/JoeGermuska/561347
+Like cut, but for CSVs. To be used from a shell command line.
+ 
+Note that fields are 1-based, similar to the UNIX 'cut' command.
+ 
+Should use something better than getopt, but this works...
+ 
+Usage: 
+    csvcut foobar.csv
+    (prints the first column of each row of foobar.csv)
+    
+    head -10 foobar.csv | csvcut -f 1,3
+    (prints the first and third columns of the first ten lines of foobar.csv)
+ 
+    csvcut -f 1,3 -d "|" foobar.csv
+    (prints the first and third columns of the pipe-delimited foobar.csv)
+ 
+    csvcut -f 1,3 -t foobar.csv
+    (prints the first and third columns of the tab-delimited foobar.csv
+     if present, the -d option will be ignored.)
+ 
+    csvcut -f 1,3 -T foobar.csv
+    (prints the first and third columns of the csv-delimited foobar.csv
+     output will be tab-delimited, and if present, the -o option will be ignored.)
+ 
+    csvcut -h foobar.csv
+    (prints the values of the first line of foobar.csv, preceded by the field index which would 
+     be used to display that column.  If present, the -f option will be ignored.)
+ 
+    csvcut -f 1,2,3 -d "|" -o , foobar.csv
+    (prints the first three columns of the pipe-delimited foobar.csv; output
+    will be comma-delimited.)
+ 
+    csvcut -f 1,2,3 -o "|" foobar.csv
+    (prints the first three columns of the comma-delimited foobar.csv; output
+    will be pipe-delimited.)
+ 
+    csvcut -o "|" foobar.csv
+    (prints all the columns of the comma-delimited foobar.csv; output will be
+    pipe-delimited.)
+ 
+    csvcut -f 1,2 -d "," -q "|" foobar.csv
+    (prints the first two columns of the comma-delimited, pipe-quoted foorbar.csv.)
+"""
+import sys, csv, getopt
+opts, args = getopt.getopt(sys.argv[1:], "f:d:o:q:htT", [])
+if args:
+    i = open(args[0],"U")
+else:
+    i = sys.stdin
+ 
+delimiter = ','
+output_delimiter = ','
+cols = []
+show_headers = False
+ 
+if opts:
+    opts = dict(opts)
+    show_headers = '-h' in opts
+    if '-f' in opts:
+        # reduce field index values by 1 to work with python's 0-based indexing
+        cols = [(int(c) - 1) for c in opts['-f'].split(",")]
+    if '-t' in opts:
+        delimiter = "\t"
+    elif '-d' in opts:
+        delimiter = opts['-d']
+    if '-T' in opts:
+        output_delimiter = "\t"
+    elif '-o' in opts:
+        output_delimiter = opts['-o']
+    if '-q' in opts:
+        quotechar = opts['-q']
+    else:
+        quotechar = None
+ 
+writer = csv.writer(sys.stdout, delimiter=output_delimiter)
+for row in csv.reader(i, delimiter=delimiter, quotechar=quotechar):
+    if show_headers:
+        for i,c in enumerate(row):
+            print "%3i: %s" % (i+1,c) # add 1 to make 1-based
+        break
+    if len(cols) == 0:
+        # print all fields
+        writer.writerow(row)
+    else:
+        # If some request fields are missing, skip them and keep going
+        writer.writerow([row[c] for c in cols if c < len(row)])
+
