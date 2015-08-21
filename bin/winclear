@@ -1,0 +1,3 @@
+#!/usr/bin/env 9 rc
+echo -n '1,$' | 9p write acme/$winid/addr
+echo -n '' | 9p write acme/$winid/data
