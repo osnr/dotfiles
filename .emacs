@@ -38,6 +38,20 @@
 (show-smartparens-global-mode +1)
 
 
+;; compile
+(ignore-errors
+  (require 'xterm-color)
+  (defun my-colorize-compilation-buffer ()
+    (when (eq major-mode 'compilation-mode)
+      (let* ((inhibit-read-only t)
+             (compilation-filter-end (point))
+             (new-string (delete-and-extract-region compilation-filter-start compilation-filter-end))
+             (colorized-new-string (xterm-color-filter new-string)))
+        (goto-char (point-max))
+        (insert colorized-new-string))))
+  (add-hook 'compilation-filter-hook 'my-colorize-compilation-buffer))
+
+
 ;; Terminal
 ;; from https://www.reddit.com/r/emacs/comments/1zkj2d/advanced_usage_of_eshell/
 (defun term-here ()
@@ -59,6 +73,15 @@
           (rename-buffer buffer-name)))))
 
 (global-set-key (kbd "C-'") 'term-here)
+
+(add-hook 'eshell-mode-hook
+          (lambda ()
+            (setq xterm-color-preserve-properties t)))
+(add-hook 'eshell-preoutput-filter-functions 'xterm-color-filter)
+
+(progn (add-hook 'comint-preoutput-filter-functions 'xterm-color-filter)
+       (setq comint-output-filter-functions (remove 'ansi-color-process-output comint-output-filter-functions))
+       (setq font-lock-unfontify-region-function 'xterm-color-unfontify-region))
 
 
 ;; Git
@@ -172,6 +195,7 @@
  '(ansi-color-names-vector
    ["#212526" "#ff4b4b" "#b4fa70" "#fce94f" "#729fcf" "#e090d7" "#8cc4ff" "#eeeeec"])
  '(clojure-defun-indents (quote (add-watch render init-state render-state)))
+ '(compilation-environment (quote ("TERM=xterm-256color")))
  '(custom-enabled-themes (quote (deeper-blue)))
  '(js-curly-indent-offset 0)
  '(js-indent-level 2)
