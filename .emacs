@@ -1,212 +1,191 @@
-(require 'package)
+;; Package management
+(require 'package) ;; You might already have this line
 (add-to-list 'package-archives
-  '("melpa" . "http://melpa.milkbox.net/packages/") t)
-(package-initialize)
+             '("melpa" . "https://melpa.org/packages/") t)
+(when (< emacs-major-version 24)
+  ;; For important compatibility libraries like cl-lib
+  (add-to-list 'package-archives '("gnu" . "http://elpa.gnu.org/packages/")))
+(add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
+(package-initialize) ;; You might already have this line
 
-(add-to-list 'load-path "~/.emacs.d/site-lisp")
+(add-to-list 'load-path "~/.emacs.d/site-lisp/")
 
-(setenv "PATH" (concat (getenv "PATH") ":/usr/local/bin"))
-(setq exec-path (append exec-path '("/usr/local/bin")))
 
-;; basic mode stuff
-;; ----------------
-(global-visual-line-mode 1)
-(show-paren-mode 1)
+;; Keybonds
+(global-set-key [(hyper a)] 'mark-whole-buffer)
+(global-set-key [(hyper v)] 'yank)
+(global-set-key [(hyper c)] 'kill-ring-save)
+(global-set-key [(hyper s)] 'save-buffer)
+(global-set-key [(hyper l)] 'goto-line)
+(global-set-key [(hyper w)]
+                (lambda () (interactive) (delete-frame)))
+(global-set-key [(hyper z)] 'undo)
+(global-set-key [(hyper n)] 'make-frame)
+(global-set-key [(hyper m)] 'suspend-frame)
 
-(require 'highlight-current-line)
-(highlight-current-line-on t)
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(highlight-current-line-face ((t (:background "alternateSelectedControlColor" :foreground "alternateSelectedControlTextColor")))))
+(setq mac-option-modifier 'meta)
+(setq mac-command-modifier 'hyper)
 
-;; misc support
-;; ------------
+
+;; General UI
 (tool-bar-mode -1)
-
-(server-start)
-
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(ack-and-a-half-executable "/usr/local/bin/ack")
- '(clojure-defun-indents (quote (go-loop match)))
- '(coffee-tab-width 4)
- '(custom-enabled-themes (quote (tango-dark)))
- '(elm-indent-offset 2)
- '(elm-indent-thenelse 2)
- '(haskell-indent-offset 4)
- '(haskell-indentation-left-offset 4)
- '(haskell-mode-hook (quote (turn-on-haskell-indent)))
- '(prolog-program-name (quote (((getenv "EPROLOG") (eval (getenv "EPROLOG"))) (eclipse "eclipse") (mercury nil) (sicstus "sicstus") (swi "/usr/local/bin/swipl") (gnu "gprolog") (t "pl"))))
- '(sgml-basic-offset 4)
- '(uniquify-buffer-name-style (quote post-forward) nil (uniquify)))
-
-(setq backup-directory-alist
-      `((".*" . ,temporary-file-directory)))
-(setq auto-save-file-name-transforms
-      `((".*" ,temporary-file-directory t)))
-
-(setq-default indent-tabs-mode nil)
-(setq tab-width 4)
-
-;; ido and file access
-;; -------------------
-(require 'ido)
-(ido-mode t)
-
-(require 'smex)
-(smex-initialize)
-(global-set-key (kbd "M-x") 'smex)
-(global-set-key (kbd "M-X") 'smex-major-mode-commands)
-;; This is your old M-x.
-(global-set-key (kbd "C-c C-c M-x") 'execute-extended-command)
 
 (require 'recentf)
 (recentf-mode 1)
 (setq recentf-max-menu-items 25)
 (global-set-key "\C-x\ \C-r" 'recentf-open-files)
 
-(require 'uniquify)
+(show-smartparens-global-mode +1)
 
-;; utils
-;; -----
-;; source: http://steve.yegge.googlepages.com/my-dot-emacs-file
-(defun rename-file-and-buffer (new-name)
-  "Renames both current buffer and file it's visiting to NEW-NAME."
-  (interactive "sNew name: ")
-  (let ((name (buffer-name))
-        (filename (buffer-file-name)))
-    (if (not filename)
-        (message "Buffer '%s' is not visiting a file!" name)
-      (if (get-buffer new-name)
-          (message "A buffer named '%s' already exists!" new-name)
+
+;; Terminal
+;; from https://www.reddit.com/r/emacs/comments/1zkj2d/advanced_usage_of_eshell/
+(defun term-here ()
+  "Opens up a new shell in the directory associated with the current buffer's file."
+  (interactive)
+  (let* ((parent (if (buffer-file-name)
+                     (file-name-directory (buffer-file-name))
+                   default-directory))
+         (name (car (last (split-string parent "/" t))))
+         (buffer-name (concat "*eshell: " name "*")))
+    (split-window-vertically)
+    (other-window 1)
+
+    (if (get-buffer buffer-name)
+        (switch-to-buffer buffer-name)
+
         (progn
-          (rename-file name new-name 1)
-          (rename-buffer new-name)
-          (set-visited-file-name new-name)
-          (set-buffer-modified-p nil))))))
+          (eshell "new")
+          (rename-buffer buffer-name)))))
 
-;; org-mode
-;; --------
-(add-to-list 'package-archives '("Org-mode" . "http://orgmode.org/pkg/daily/"))
+(global-set-key (kbd "C-'") 'term-here)
 
-(require 'org)
 
-(require 'org-install)
-(add-to-list 'auto-mode-alist '("\\.org$" . org-mode))
-(define-key global-map "\C-cl" 'org-store-link)
-(define-key global-map "\C-ca" 'org-agenda)
-(setq org-log-done t)
+;; Git
+(global-set-key (kbd "C-;") 'magit-status)
 
-;; lisp
-;; ----
 
-(autoload 'enable-paredit-mode "paredit" "Turn on pseudo-structural editing of Lisp code." t)
-(add-hook 'emacs-lisp-mode-hook       #'enable-paredit-mode)
-(add-hook 'eval-expression-minibuffer-setup-hook #'enable-paredit-mode)
-(add-hook 'ielm-mode-hook             #'enable-paredit-mode)
-(add-hook 'lisp-mode-hook             #'enable-paredit-mode)
-(add-hook 'lisp-interaction-mode-hook #'enable-paredit-mode)
-(add-hook 'scheme-mode-hook           #'enable-paredit-mode)
-(add-hook 'clojure-mode-hook           #'enable-paredit-mode)
-(add-hook 'clojurescript-mode-hook           #'enable-paredit-mode)
+;; Fuzzy search
+(require 'ido)
+(ido-mode t)
+(require 'smex)
+(global-set-key (kbd "M-x") 'smex)
 
-;; markdown
-;; --------
 
-(add-to-list 'auto-mode-alist '("\\.md$" . markdown-mode))
-(add-to-list 'auto-mode-alist '("\\.markdown$" . markdown-mode))
+;; Acme emulation
+(require 'acme-search)
+(global-set-key [(hyper mouse-1)] 'acme-search-forward)
 
-;; coq/pg
-;; ------
-(load-file "/usr/local/share/emacs/site-lisp/ProofGeneral/generic/proof-site.el")
 
-;; elm
-;; ---
-(add-to-list 'load-path "~/.emacs.d/site-lisp/elm-mode/")
-(require 'elm-mode)
+;; Notes
+(require 'deft)
+(setq deft-extensions '("org"))
+(global-set-key (kbd "C-`") 'deft)
+(setq deft-use-filename-as-title t)
+(setq deft-use-filter-string-for-filename t)
 
-;; js
-;; --
-(add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
-(put 'downcase-region 'disabled nil)
+(add-hook 'org-mode-hook
+          (lambda ()
+            (turn-on-org-cdlatex)
+            (turn-on-auto-fill)
+            (turn-on-visual-line-mode)
+            (local-unset-key (kbd "C-'"))))
 
-;; prolog
-;; --
-(autoload 'run-prolog "prolog" "Start a Prolog sub-process." t)
-(autoload 'prolog-mode "prolog" "Major mode for editing Prolog programs." t)
-(autoload 'mercury-mode "prolog" "Major mode for editing Mercury programs." t)
-(setq prolog-system 'swi)
-(setq auto-mode-alist (append '(("\\.pl$" . prolog-mode)
-                                ("\\.m$" . mercury-mode))
-                               auto-mode-alist))
-(put 'narrow-to-region 'disabled nil)
 
-;; ocaml
-;; --
-(require 'tuareg)
-(setq auto-mode-alist 
-      (append '(("\\.ml[ily]?$" . tuareg-mode))
-          auto-mode-alist))
+;; LaTeX
+(require 'ob-latex)
+(setq org-src-fontify-natively t)
 
-;; -- Tweaks for OS X -------------------------------------
-;; Tweak for problem on OS X where Emacs.app doesn't run the right
-;; init scripts when invoking a sub-shell
-(cond
- ((eq window-system 'ns) ; macosx
-  ;; Invoke login shells, so that .profile or .bash_profile is read
-  (setq shell-command-switch "-lc")))
 
-;; -- opam and utop setup --------------------------------
-;; Setup environment variables using opam
-(defun opam-vars ()
-  (let* ((x (shell-command-to-string "opam config env"))
-     (x (split-string x "\n"))
-     (x (remove-if (lambda (x) (equal x "")) x))
-     (x (mapcar (lambda (x) (split-string x ";")) x))
-     (x (mapcar (lambda (x) (car x)) x))
-     (x (mapcar (lambda (x) (split-string x "=")) x))
-     )
-    x))
-(dolist (var (opam-vars))
-  (setenv (car var) (substring (cadr var) 1 -1)))
-;; The following simpler alternative works as of opam 1.1
-;; (dolist
-;;    (var (car (read-from-string
-;;         (shell-command-to-string "opam config env --sexp"))))
-;;  (setenv (car var) (cadr var)))
-;; Update the emacs path
-(setq exec-path (split-string (getenv "PATH") path-separator))
-;; Update the emacs load path
-(push (concat (getenv "OCAML_TOPLEVEL_PATH")
-          "/../../share/emacs/site-lisp") load-path)
-;; Automatically load utop.el
-(autoload 'utop "utop" "Toplevel for OCaml" t)
-(autoload 'utop-setup-ocaml-buffer "utop" "Toplevel for OCaml" t)
-(add-hook 'tuareg-mode-hook 'utop-setup-ocaml-buffer)
+;; lols
+(setq-default indent-tabs-mode nil)
+(setq
+   backup-by-copying t      ; don't clobber symlinks
+   backup-directory-alist
+    '(("." . "~/.saves"))    ; don't litter my fs tree
+   delete-old-versions t
+   kept-new-versions 6
+   kept-old-versions 2
+   version-control t)       ; use versioned backups
 
-;; magit
-;; --
-(set-variable 'magit-emacsclient-executable "/usr/local/bin/emacsclient")
 
-;; typescript
-;; --
-(require 'typescript)
-(add-to-list 'auto-mode-alist '("\\.ts\\'" . typescript-mode))
+;; web-mode
+(require 'web-mode)
+(add-to-list 'auto-mode-alist '("\\.js\\'" . web-mode))
+(add-hook 'web-mode-hook
+	  (lambda ()
+	    (web-mode-set-content-type "jsx")))
 
-(require 'tss)
 
-(setq tss-popup-help-key "C-:")
-(setq tss-jump-to-definition-key "C->")
+;; Flycheck / Flow
+(require 'flycheck-flow)
+;; (add-hook 'web-mode-hook 'flycheck-mode)
 
-(tss-config-default)
 
-;; haskell
-;; --
-(autoload 'ghc-init "ghc" nil t)
-(add-hook 'haskell-mode-hook (lambda () (ghc-init) (flymake-mode)))
+;; Clojure
+(add-hook 'clojure-mode-hook
+          (lambda ()
+            (turn-on-smartparens-strict-mode)
+            (sp-use-paredit-bindings)))
+
+
+;; Emacs Lisp
+(add-hook 'emacs-lisp-mode-hook
+          (lambda ()
+            (turn-on-smartparens-strict-mode)
+            (sp-use-paredit-bindings)))
+
+
+;; Markdown
+(add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-mode))
+(add-hook 'markdown-mode-hook
+          (lambda ()
+            (turn-on-auto-fill)))
+
+
+;; fonts
+(add-hook 'dired-mode-hook
+          (lambda ()
+            (setq buffer-face-mode-face '(:family "Monaco"))
+            (buffer-face-mode)))
+
+
+;; irc config
+(require 'rcirc)
+
+(require 'rcirc-color)
+(rcirc-track-minor-mode 1)
+
+(call-process "autoirc" nil 0 nil)
+
+
+;; private
+(load-file "~/.emacs.d/private.el")
+
+
+;; custom-set-variables
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(ansi-color-names-vector
+   ["#212526" "#ff4b4b" "#b4fa70" "#fce94f" "#729fcf" "#e090d7" "#8cc4ff" "#eeeeec"])
+ '(clojure-defun-indents (quote (add-watch render init-state render-state)))
+ '(custom-enabled-themes (quote (deeper-blue)))
+ '(js-curly-indent-offset 0)
+ '(js-indent-level 2)
+ '(web-mode-attr-indent-offset 2)
+ '(web-mode-code-indent-offset 2)
+ '(web-mode-enable-auto-indentation t)
+ '(web-mode-enable-auto-quoting nil)
+ '(web-mode-markup-indent-offset 2))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
+
+
+(server-start)

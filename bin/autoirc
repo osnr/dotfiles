@@ -1,0 +1,2 @@
+#!/bin/bash
+autossh -M 20000 -L 6667:localhost:6667 -N "Bill's PC"

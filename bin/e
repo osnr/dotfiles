@@ -1,0 +1,2 @@
+#!/usr/bin/env 9 rc
+/opt/homebrew-cask/Caskroom/emacs-mac/emacs-24.5-z-mac-5.10/Emacs.app/Contents/MacOS/bin/emacsclient -n $*
