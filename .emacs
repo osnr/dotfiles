@@ -50,16 +50,20 @@
         (goto-char (point-max))
         (insert colorized-new-string))))
   (add-hook 'compilation-filter-hook 'my-colorize-compilation-buffer))
-
+(global-set-key (kbd "C-.") 'recompile)
 
 ;; Terminal
 ;; from https://www.reddit.com/r/emacs/comments/1zkj2d/advanced_usage_of_eshell/
 (defun term-here ()
   "Opens up a new shell in the directory associated with the current buffer's file."
   (interactive)
-  (let* ((parent (if (buffer-file-name)
-                     (file-name-directory (buffer-file-name))
-                   default-directory))
+  (let* ((parent
+          (condition-case nil
+              (projectile-project-root)
+              (error
+               (if (buffer-file-name)
+                   (file-name-directory (buffer-file-name))
+                 default-directory))))
          (name (car (last (split-string parent "/" t))))
          (buffer-name (concat "*eshell: " name "*")))
     (split-window-vertically)
@@ -83,14 +87,29 @@
        (setq comint-output-filter-functions (remove 'ansi-color-process-output comint-output-filter-functions))
        (setq font-lock-unfontify-region-function 'xterm-color-unfontify-region))
 
+(defun eshell-clear-buffer ()
+  "Clear terminal"
+  (interactive)
+  (let ((inhibit-read-only t))
+    (erase-buffer)
+    (eshell-send-input)))
+(add-hook 'eshell-mode-hook
+          '(lambda ()
+             (local-set-key (kbd "C-l") 'eshell-clear-buffer)))
 
 ;; Git
 (global-set-key (kbd "C-;") 'magit-status)
 
 
+;; Projectile
+(projectile-global-mode)
+(global-set-key (kbd "C-c C-f") 'projectile-find-file)
+
+
 ;; Fuzzy search
 (require 'ido)
 (ido-mode t)
+
 (require 'smex)
 (global-set-key (kbd "M-x") 'smex)
 
@@ -179,6 +198,30 @@
 (require 'rcirc-color)
 (rcirc-track-minor-mode 1)
 
+(eval-after-load 'rcirc
+  '(defun-rcirc-command reconnect (arg)
+     "Reconnect the server process."
+     (interactive "i")
+     (unless process
+       (error "There's no process for this target"))
+     (let* ((server (car (process-contact process)))
+            (port (process-contact process :service))
+            (nick (rcirc-nick process))
+            channels query-buffers)
+       (dolist (buf (buffer-list))
+         (with-current-buffer buf
+           (when (eq process (rcirc-buffer-process))
+             (remove-hook 'change-major-mode-hook
+                          'rcirc-change-major-mode-hook)
+             (if (rcirc-channel-p rcirc-target)
+                 (setq channels (cons rcirc-target channels))
+               (setq query-buffers (cons buf query-buffers))))))
+       (delete-process process)
+       (rcirc-connect server port nick
+                      rcirc-default-user-name
+                      rcirc-default-full-name
+                      channels))))
+
 (call-process "autoirc" nil 0 nil)
 
 
@@ -199,6 +242,7 @@
  '(custom-enabled-themes (quote (deeper-blue)))
  '(js-curly-indent-offset 0)
  '(js-indent-level 2)
+ '(tool-bar-mode nil)
  '(web-mode-attr-indent-offset 2)
  '(web-mode-code-indent-offset 2)
  '(web-mode-enable-auto-indentation t)
