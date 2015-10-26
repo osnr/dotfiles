@@ -87,15 +87,24 @@
        (setq comint-output-filter-functions (remove 'ansi-color-process-output comint-output-filter-functions))
        (setq font-lock-unfontify-region-function 'xterm-color-unfontify-region))
 
+(defun my-eshell-ido-complete-command-history ()
+  (interactive)
+  (eshell-kill-input)
+  (insert
+   (ido-completing-read "Run command: " (delete-dups (ring-elements eshell-history-ring))))
+  (eshell-send-input))
+
+(add-hook 'eshell-mode-hook
+      (lambda ()
+        (local-set-key (kbd "C-c h") #'my-eshell-ido-complete-command-history)))
+
 (defun eshell-clear-buffer ()
   "Clear terminal"
   (interactive)
   (let ((inhibit-read-only t))
     (erase-buffer)
     (eshell-send-input)))
-(add-hook 'eshell-mode-hook
-          '(lambda ()
-             (local-set-key (kbd "C-l") 'eshell-clear-buffer)))
+
 
 ;; Git
 (global-set-key (kbd "C-;") 'magit-status)
@@ -156,6 +165,7 @@
 (add-to-list 'auto-mode-alist '("\\.js\\'" . web-mode))
 (add-hook 'web-mode-hook
 	  (lambda ()
+            (local-unset-key (kbd "C-c C-f'"))
 	    (web-mode-set-content-type "jsx")))
 
 
@@ -239,9 +249,15 @@
    ["#212526" "#ff4b4b" "#b4fa70" "#fce94f" "#729fcf" "#e090d7" "#8cc4ff" "#eeeeec"])
  '(clojure-defun-indents (quote (add-watch render init-state render-state)))
  '(compilation-environment (quote ("TERM=xterm-256color")))
+ '(compilation-error-regexp-alist
+   (quote
+    (("^\\(?:[ 	]+at \\|==[0-9]+== +\\(?:at\\|b\\(y\\)\\)\\).+(\\([^()
+]+\\):\\([0-9]+\\):\\([0-9]+\\)?)$" 2 3 4
+ (1)))))
  '(custom-enabled-themes (quote (deeper-blue)))
  '(js-curly-indent-offset 0)
  '(js-indent-level 2)
+ '(projectile-mode-line (quote (:eval (format " P[%s]" (projectile-project-name)))))
  '(tool-bar-mode nil)
  '(web-mode-attr-indent-offset 2)
  '(web-mode-code-indent-offset 2)
@@ -253,7 +269,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- )
+ '(default ((t (:family "Comic Sans MS" :foundry "nil" :slant normal :weight normal :height 141 :width normal)))))
 
 
 (server-start)
