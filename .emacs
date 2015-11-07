@@ -221,7 +221,9 @@
    (quote
     (("^\\(?:[ 	]+at \\|==[0-9]+== +\\(?:at\\|b\\(y\\)\\)\\).+(\\([^()
 ]+\\):\\([0-9]+\\):\\([0-9]+\\)?)$" 2 3 4
- (1)))))
+ (1))
+     ("^\\([^:
+]+\\):\\([0-9]+\\):\\([0-9]+\\),\\([0-9]+\\)" 1 2 3))))
  '(custom-enabled-themes (quote (deeper-blue)))
  '(js-curly-indent-offset 0)
  '(js-indent-level 2)
@@ -232,12 +234,12 @@
  '(web-mode-enable-auto-indentation t)
  '(web-mode-enable-auto-quoting nil)
  '(web-mode-markup-indent-offset 2))
+
+
+(server-start)
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:family "Comic Sans MS" :foundry "nil" :slant normal :weight normal :height 141 :width normal)))))
-
-
-(server-start)
+ )
