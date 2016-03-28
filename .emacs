@@ -35,6 +35,8 @@
 (setq recentf-max-menu-items 25)
 (global-set-key "\C-x\ \C-r" 'recentf-open-files)
 
+(global-set-key (kbd "C-c w") 'whitespace-mode)
+
 (show-smartparens-global-mode +1)
 
 
@@ -57,15 +59,7 @@
 (defun term-here ()
   "Opens up a new shell in the directory associated with the current buffer's file."
   (interactive)
-  (let* ((parent
-          (condition-case nil
-              (projectile-project-root)
-              (error
-               (if (buffer-file-name)
-                   (file-name-directory (buffer-file-name))
-                 default-directory))))
-         (name (car (last (split-string parent "/" t))))
-         (buffer-name (concat "*eshell: " name "*")))
+  (let ((buffer-name (term-name)))
     (split-window-vertically)
     (other-window 1)
 
@@ -76,11 +70,25 @@
           (eshell "new")
           (rename-buffer buffer-name)))))
 
+(defun term-name ()
+  "Makes up an appropriate name for an eshell."
+  (let* ((parent
+          (condition-case nil
+              (projectile-project-root)
+              (error
+               (if (buffer-file-name)
+                   (file-name-directory (buffer-file-name))
+                 default-directory))))
+         (name (car (last (split-string parent "/" t)))))
+    (concat "*eshell: " name "*")))
+
 (global-set-key (kbd "C-'") 'term-here)
+(global-set-key (kbd "C-\"") 'eshell)
 
 (add-hook 'eshell-mode-hook
           (lambda ()
-            (setq xterm-color-preserve-properties t)))
+            (setq xterm-color-preserve-properties t)
+            (local-unset-key (kbd "C-c C-f"))))
 (add-hook 'eshell-preoutput-filter-functions 'xterm-color-filter)
 
 (progn (add-hook 'comint-preoutput-filter-functions 'xterm-color-filter)
@@ -105,14 +113,69 @@
     (erase-buffer)
     (eshell-send-input)))
 
+(defun eshell/clear (&rest args)
+  (eshell-clear-buffer))
+
+(defun eshell/e (&rest args)
+  (if (null args)
+      ;; If I just ran "emacs", I probably expect to be launching
+      ;; Emacs, which is rather silly since I'm already in Emacs.
+      ;; So just pretend to do what I ask.
+      (bury-buffer)
+    ;; We have to expand the file names or else naming a directory in an
+    ;; argument causes later arguments to be looked for in that directory,
+    ;; not the starting directory
+    (mapc #'find-file (mapcar #'expand-file-name (eshell-flatten-list (reverse args))))))
+
+(add-hook 'eshell-directory-change-hook
+          (defun term-update-title ()
+            (rename-buffer (term-name))))
+
+(defun cr (&rest args)
+  (eshell/cd (projectile-project-root)))
 
 ;; Git
 (global-set-key (kbd "C-;") 'magit-status)
+(setq vc-follow-symlinks t)
 
 
 ;; Projectile
 (projectile-global-mode)
 (global-set-key (kbd "C-c C-f") 'projectile-find-file)
+
+
+;; Ag
+(global-set-key (kbd "C-,") 'projectile-ag)
+(global-set-key (kbd "C-<") 'ag)
+
+
+;; Window split
+(defun toggle-window-split ()
+  (interactive)
+  (if (= (count-windows) 2)
+      (let* ((this-win-buffer (window-buffer))
+	     (next-win-buffer (window-buffer (next-window)))
+	     (this-win-edges (window-edges (selected-window)))
+	     (next-win-edges (window-edges (next-window)))
+	     (this-win-2nd (not (and (<= (car this-win-edges)
+					 (car next-win-edges))
+				     (<= (cadr this-win-edges)
+					 (cadr next-win-edges)))))
+	     (splitter
+	      (if (= (car this-win-edges)
+		     (car (window-edges (next-window))))
+		  'split-window-horizontally
+		'split-window-vertically)))
+	(delete-other-windows)
+	(let ((first-win (selected-window)))
+	  (funcall splitter)
+	  (if this-win-2nd (other-window 1))
+	  (set-window-buffer (selected-window) this-win-buffer)
+	  (set-window-buffer (next-window) next-win-buffer)
+	  (select-window first-win)
+	  (if this-win-2nd (other-window 1))))))
+
+(global-set-key (kbd "C-x |") 'toggle-window-split)
 
 
 ;; Fuzzy search
@@ -146,7 +209,45 @@
 ;; LaTeX
 (require 'ob-latex)
 (setq org-src-fontify-natively t)
+(setq org-highlight-latex-and-related '(latex script entities))
 
+(setq org-latex-pdf-process               ; for regular export
+      '("xelatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+        "xelatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+        "xelatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
+
+;; C
+(defun maybe-qemu-style ()
+  (when (and buffer-file-name
+             (string-match "qemu" buffer-file-name))
+    (c-set-style "linux")
+    (setq c-basic-offset 4)))
+(add-hook 'c-mode-hook 'maybe-qemu-style)
+(add-hook 'c-mode-hook 'flycheck-mode)
+;; (add-hook 'c-mode-hook 'c-turn-on-eldoc-mode)
+(require 'stickyfunc-enhance)
+(add-hook 'c-mode-hook 'hs-minor-mode)
+
+(add-to-list 'safe-local-variable-values
+             '(flycheck-checker . c/c++-gcc))
+(add-to-list 'safe-local-variable-values
+	     '(flycheck-c/c++-gcc-executable . "i386-elf-gcc"))
+(add-to-list 'safe-local-variable-values
+             '(flycheck-gcc-args . ("-DUSERPROG" "-DVM")))
+(add-to-list 'safe-local-variable-values
+             '(flycheck-gcc-include-path . ("/Users/osnr/Dropbox/classes/cs140/pintos/src"
+					    "/Users/osnr/Dropbox/classes/cs140/pintos/src/lib"
+					    "/Users/osnr/Dropbox/classes/cs140/pintos/src/lib/kernel")))
+(add-to-list 'safe-local-variable-values
+             '(c-eldoc-cpp-command . "i386-elf-gcc "))
+(add-to-list 'safe-local-variable-values
+             '(c-eldoc-includes . "-I/Users/osnr/Dropbox/classes/cs140/pintos/src -I/Users/osnr/Dropbox/classes/cs140/pintos/src/lib -I/Users/osnr/Dropbox/classes/cs140/pintos/src/lib/kernel"))
+
+(require 'srefactor)
+(add-to-list 'semantic-default-submodes 'global-semantic-stickyfunc-mode)
+(semantic-mode 1)
+(define-key c-mode-map (kbd "M-RET") 'srefactor-refactor-at-point)
+(define-key c++-mode-map (kbd "M-RET") 'srefactor-refactor-at-point)
 
 ;; lols
 (setq-default indent-tabs-mode nil)
@@ -217,16 +318,35 @@
    ["#212526" "#ff4b4b" "#b4fa70" "#fce94f" "#729fcf" "#e090d7" "#8cc4ff" "#eeeeec"])
  '(clojure-defun-indents (quote (add-watch render init-state render-state)))
  '(compilation-environment (quote ("TERM=xterm-256color")))
- '(compilation-error-regexp-alist
-   (quote
-    (("^\\(?:[ 	]+at \\|==[0-9]+== +\\(?:at\\|b\\(y\\)\\)\\).+(\\([^()
-]+\\):\\([0-9]+\\):\\([0-9]+\\)?)$" 2 3 4
- (1))
-     ("^\\([^:
-]+\\):\\([0-9]+\\):\\([0-9]+\\),\\([0-9]+\\)" 1 2 3))))
+ '(compilation-error-regexp-alist (quote (gcc-include gnu)))
  '(custom-enabled-themes (quote (deeper-blue)))
+ '(eshell-history-size 1024)
+ '(gdb-many-windows t)
  '(js-curly-indent-offset 0)
  '(js-indent-level 2)
+ '(large-file-warning-threshold 50000000)
+ '(org-latex-classes
+   (quote
+    (("article" "\\documentclass[11pt]{article}"
+      ("\\section{%s}" . "\\section*{%s}")
+      ("\\subsection{%s}" . "\\subsection*{%s}")
+      ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+      ("\\paragraph{%s}" . "\\paragraph*{%s}")
+      ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))
+     ("report" "\\documentclass[11pt]{report}"
+      ("\\part{%s}" . "\\part*{%s}")
+      ("\\chapter{%s}" . "\\chapter*{%s}")
+      ("\\section{%s}" . "\\section*{%s}")
+      ("\\subsection{%s}" . "\\subsection*{%s}")
+      ("\\subsubsection{%s}" . "\\subsubsection*{%s}"))
+     ("book" "\\documentclass[11pt]{book}"
+      ("\\part{%s}" . "\\part*{%s}")
+      ("\\chapter{%s}" . "\\chapter*{%s}")
+      ("\\section{%s}" . "\\section*{%s}")
+      ("\\subsection{%s}" . "\\subsection*{%s}")
+      ("\\subsubsection{%s}" . "\\subsubsection*{%s}"))
+     ("letter" "\\documentclass{letter}"
+      ("" . "")))))
  '(projectile-mode-line (quote (:eval (format " P[%s]" (projectile-project-name)))))
  '(tool-bar-mode nil)
  '(web-mode-attr-indent-offset 2)
@@ -243,3 +363,4 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
+(put 'narrow-to-region 'disabled nil)
