@@ -288,6 +288,7 @@
 
 
 ;; Notes
+(require 'org)
 (require 'deft)
 (setq deft-extensions '("org"))
 (setq deft-default-extension "org")
@@ -302,7 +303,38 @@
             (turn-on-auto-fill)
             (turn-on-visual-line-mode)
             (local-unset-key (kbd "C-'"))))
-(require 'org-download)
+
+(defun my-dnd-func (event)
+  ;; it always comes out as M-drag-n-drop for some reason
+  (interactive "e")
+  (goto-char (nth 1 (event-start event)))
+  (x-focus-frame nil)
+  (let* ((payload (car (last event)))
+         (type (car payload))
+         (fname (cadr payload))
+         (img-regexp "\\(png\\|jp[e]?g\\)\\>"))
+    (cond
+     ;; insert image link
+     ((and  (or (eq 'drag-n-drop (car event))
+                (eq 'M-drag-n-drop (car event)))
+            (eq 'file type)
+            (string-match img-regexp fname))
+      (insert (format "[[%s]]" fname))
+      (org-display-inline-images t t))
+
+     ;; ((and (eq 'M-drag-n-drop (car event))
+     ;;       (eq 'file type))
+     ;;  (insert (format "[[attachfile:%s]]" fname)))
+
+     ;; regular drag and drop on file
+     ((eq 'file type)
+      (insert (format "[[%s]]\n" fname)))
+     (t
+      (error "I am not equipped for dnd on %s" payload)))))
+
+(define-key org-mode-map (kbd "<drag-n-drop>") 'my-dnd-func)
+(define-key org-mode-map (kbd "<C-drag-n-drop>") 'my-dnd-func)
+(define-key org-mode-map (kbd "<M-drag-n-drop>") 'my-dnd-func)
 
 (defun export-newsletter-markdown ()
   (defun new-tab (url) (write-region url nil "~/Code/tabfs/fs/mnt/tabs/create"))
@@ -334,16 +366,12 @@
     ;; fill in title from title
     (write-region title nil (concat tab-path "/inputs/update_subject.txt"))
     ;; fill in body from body
-    (write-region (point-min) (point-max) (concat tab-path "/inputs/update_body.txt"))
-    ))
-
-;; (fset 'export-newsletter-markdown
-;;    [?\C-c ?\C-e ?m ?M ?\M-x ?m ?a ?r ?k ?d ?o ?w ?n ?- ?m ?o ?d ?e return ?\H-a ?\M-x ?u ?n ?f ?i ?l ?l ?- ?r ?e ?g ?i ?o ?n return])
+    (write-region (point-min) (point-max) (concat tab-path "/inputs/update_body.txt"))))
 
 (add-to-list 'image-type-file-name-regexps '("\\.pdf\\'" . imagemagick))
 (add-to-list 'image-file-name-extensions "pdf")
 (setq imagemagick-types-inhibit (remove 'PDF imagemagick-types-inhibit))
-(setq org-image-actual-width 500)
+(setq org-image-actual-width 400)
 
 (defadvice org-display-inline-images (around center-images activate)
   (let ((create-image-orig (symbol-function 'create-image)))
@@ -755,7 +783,7 @@ static char *gnus-pointer[] = {
  '(org-latex-prefer-user-labels t)
  '(package-selected-packages
    (quote
-    (forge tramp php-mode racket-mode flycheck-inline eglot elixir-mode hindent glsl-mode carbon-now-sh flycheck-irony irony-eldoc company-irony irony paredit js2-mode cargo rust-mode reason-mode tide flycheck csharp-mode wgrep company-sourcekit swift-mode toml-mode yapfify mocha recompile-on-save prettier-js typescript-mode company-jedi csv-mode web-mode-edit-element yaml-mode xterm-color wgrep-ag web-mode vagrant-tramp unfill undo-tree tuareg tern string-inflection ssh smex smartparens rich-minority rcirc-color racer projectile org-download org nodejs-repl neotree multi-term mmm-mode markdown-mode magit lua-mode image+ haskell-mode go-mode flycheck-rust exec-path-from-shell elpy elm-mode eimp deft company-racer coffee-mode clojure-mode cdlatex c-eldoc buttercup auctex anzu ag)))
+    (forge tramp php-mode racket-mode flycheck-inline eglot elixir-mode hindent glsl-mode carbon-now-sh flycheck-irony irony-eldoc company-irony irony paredit js2-mode cargo rust-mode reason-mode tide flycheck csharp-mode wgrep company-sourcekit swift-mode toml-mode yapfify mocha recompile-on-save prettier-js typescript-mode company-jedi csv-mode web-mode-edit-element yaml-mode xterm-color wgrep-ag web-mode vagrant-tramp unfill undo-tree tuareg tern string-inflection ssh smex smartparens rich-minority rcirc-color racer projectile org nodejs-repl neotree multi-term mmm-mode markdown-mode magit lua-mode image+ haskell-mode go-mode flycheck-rust exec-path-from-shell elpy elm-mode eimp deft company-racer coffee-mode clojure-mode cdlatex c-eldoc buttercup auctex anzu ag)))
  '(projectile-mode-line (quote (:eval (format " P[%s]" (projectile-project-name)))))
  '(python-shell-interpreter "python3")
  '(safe-local-variable-values
