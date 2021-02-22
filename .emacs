@@ -10,7 +10,6 @@
 
 (add-to-list 'load-path "~/.emacs.d/site-lisp/")
 
-
 ;; Keybonds
 (global-set-key [(hyper a)] 'mark-whole-buffer)
 (global-set-key [(hyper v)] 'yank)
@@ -288,7 +287,6 @@
 
 
 ;; Notes
-(require 'org)
 (require 'deft)
 (setq deft-extensions '("org"))
 (setq deft-default-extension "org")
@@ -297,44 +295,38 @@
 (setq deft-use-filter-string-for-filename t)
 (setq deft-text-mode 'org-mode)
 
+(defun org-image-dnd-protocol (url action)
+  (when (and (derived-mode-p 'org-mode)
+             (string-match "\\(png\\|jp[e]?g\\)\\>" url))
+    (x-focus-frame nil) ; do i need this?
+    
+    (when (string-prefix-p "/Users/osnr/Code/newsletters" (expand-file-name (buffer-file-name)))
+      (when (string-prefix-p "file:///var/folders/" url)
+        ;; it's from Screenotate; Esc out of Screenotate
+        (shell-command "osascript -e 'tell application \"System Events\" to key code 53'"))
+
+      (let* ((date-folder (file-name-as-directory (file-name-sans-extension (buffer-file-name))))
+             (target-name (concat date-folder
+                                  (read-string (concat "Image name for "
+                                                       (file-name-nondirectory url)
+                                                       ": ")))))
+        ;; create date-folder for newsletter if doesn't exist
+        (unless (file-exists-p date-folder) (make-directory date-folder))
+
+        (url-copy-file url target-name) ; copy image to date-folder
+        (magit-stage-file target-name)
+        (insert (format "[[%s]]" target-name))))
+
+    (org-display-inline-images t t)))
+
+(add-to-list 'dnd-protocol-alist '("\\(png\\|jp[e]?g\\)\\>" . org-image-dnd-protocol))
+
 (add-hook 'org-mode-hook
           (lambda ()
             ;; (turn-on-org-cdlatex)
             (turn-on-auto-fill)
             (turn-on-visual-line-mode)
             (local-unset-key (kbd "C-'"))))
-
-(defun my-dnd-func (event)
-  ;; it always comes out as M-drag-n-drop for some reason
-  (interactive "e")
-  (goto-char (nth 1 (event-start event)))
-  (x-focus-frame nil)
-  (let* ((payload (car (last event)))
-         (type (car payload))
-         (fname (cadr payload))
-         (img-regexp "\\(png\\|jp[e]?g\\)\\>"))
-    (cond
-     ;; insert image link
-     ((and  (or (eq 'drag-n-drop (car event))
-                (eq 'M-drag-n-drop (car event)))
-            (eq 'file type)
-            (string-match img-regexp fname))
-      (insert (format "[[%s]]" fname))
-      (org-display-inline-images t t))
-
-     ;; ((and (eq 'M-drag-n-drop (car event))
-     ;;       (eq 'file type))
-     ;;  (insert (format "[[attachfile:%s]]" fname)))
-
-     ;; regular drag and drop on file
-     ((eq 'file type)
-      (insert (format "[[%s]]\n" fname)))
-     (t
-      (error "I am not equipped for dnd on %s" payload)))))
-
-(define-key org-mode-map (kbd "<drag-n-drop>") 'my-dnd-func)
-(define-key org-mode-map (kbd "<C-drag-n-drop>") 'my-dnd-func)
-(define-key org-mode-map (kbd "<M-drag-n-drop>") 'my-dnd-func)
 
 (defun export-newsletter-markdown ()
   (defun new-tab (url) (write-region url nil "~/Code/tabfs/fs/mnt/tabs/create"))
@@ -358,6 +350,7 @@
     (deactivate-mark)
 
     ;; convert images, upload?
+    ;; convert image URLs
 
     ;; bring to front
     (activate-tab tab-path)
@@ -540,14 +533,14 @@
             (sp-use-paredit-bindings)))
 
 ;; Common Lisp / SBCL
-(load (expand-file-name "~/.quicklisp/slime-helper.el"))
-(setq inferior-lisp-program "sbcl")
-(add-hook 'slime-repl-mode-hook
-          (lambda ()
-            (turn-on-smartparens-strict-mode)
-            (sp-use-paredit-bindings)))
-(sp-pair "'" nil :actions :rem)
-(sp-pair "`" nil :actions :rem)
+;; (load (expand-file-name "~/.quicklisp/slime-helper.el"))
+;; (setq inferior-lisp-program "sbcl")
+;; (add-hook 'slime-repl-mode-hook
+;;           (lambda ()
+;;             (turn-on-smartparens-strict-mode)
+;;             (sp-use-paredit-bindings)))
+;; (sp-pair "'" nil :actions :rem)
+;; (sp-pair "`" nil :actions :rem)
 
 ;; Markdown
 (add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-mode))
@@ -566,8 +559,8 @@
             (buffer-face-mode)))
 
 ;; pdf
-(load-file "~/.emacs.d/pdf-mode.el/pdf-mode.el")
-(require 'pdf-mode)
+;; (load-file "~/.emacs.d/pdf-mode.el/pdf-mode.el")
+;; (require 'pdf-mode)
 
 
 ;; random
@@ -670,16 +663,15 @@
  '(asm-comment-char 47)
  '(c-basic-offset 4)
  '(c-block-comment-prefix "  ")
- '(clojure-defun-indents (quote (add-watch render init-state render-state)))
+ '(clojure-defun-indents '(add-watch render init-state render-state))
  '(compilation-always-kill t)
  '(compilation-ask-about-save nil)
- '(compilation-error-regexp-alist (quote (python-tracebacks-and-caml gnu)))
- '(custom-enabled-themes (quote (tango-dark)))
- '(diary-entry-marker (quote font-lock-variable-name-face))
+ '(compilation-error-regexp-alist '(python-tracebacks-and-caml gnu))
+ '(custom-enabled-themes '(tango-dark))
+ '(diary-entry-marker 'font-lock-variable-name-face)
  '(dired-use-ls-dired nil)
  '(emms-mode-line-icon-image-cache
-   (quote
-    (image :type xpm :ascent center :data "/* XPM */
+   '(image :type xpm :ascent center :data "/* XPM */
 static char *note[] = {
 /* width height num_colors chars_per_pixel */
 \"    10   11        2            1\",
@@ -697,16 +689,15 @@ static char *note[] = {
 \"#..######.\",
 \"#######...\",
 \"######....\",
-\"#######..#\" ;")))
+\"#######..#\" ;"))
  '(eshell-history-size 1024)
  '(fci-rule-color "#f6f0e1")
- '(flycheck-color-mode-line-face-to-color (quote mode-line-buffer-id))
+ '(flycheck-color-mode-line-face-to-color 'mode-line-buffer-id)
  '(flycheck-javascript-flow-args nil)
  '(gdb-many-windows nil)
- '(gnus-logo-colors (quote ("#0d7b72" "#adadad")) t)
+ '(gnus-logo-colors '("#0d7b72" "#adadad") t)
  '(gnus-mode-line-image-cache
-   (quote
-    (image :type xpm :ascent center :data "/* XPM */
+   '(image :type xpm :ascent center :data "/* XPM */
 static char *gnus-pointer[] = {
 /* width height num_colors chars_per_pixel */
 \"    18    13        2            1\",
@@ -726,18 +717,17 @@ static char *gnus-pointer[] = {
 \"######..###.######\",
 \"###....####.######\",
 \"###..######.######\",
-\"###########.######\" };")) t)
+\"###########.######\" };") t)
  '(js-curly-indent-offset 0)
  '(js-indent-level 2)
  '(large-file-warning-threshold 50000000)
  '(markdown-indent-on-enter nil)
  '(org-adapt-indentation nil)
  '(org-allow-promoting-top-level-subtree t)
- '(org-blank-before-new-entry (quote ((heading) (plain-list-item))))
- '(org-export-backends (quote (ascii html latex md)))
+ '(org-blank-before-new-entry '((heading) (plain-list-item)))
+ '(org-export-backends '(ascii html latex md))
  '(org-latex-classes
-   (quote
-    (("beamer" "\\documentclass[presentation]{beamer}"
+   '(("beamer" "\\documentclass[presentation]{beamer}"
       ("\\section{%s}" . "\\section*{%s}")
       ("\\subsection{%s}" . "\\subsection*{%s}")
       ("\\subsubsection{%s}" . "\\subsubsection*{%s}"))
@@ -762,10 +752,9 @@ static char *gnus-pointer[] = {
      ("letter" "\\documentclass{letter}"
       ("" . ""))
      ("sigchi" "\\documentclass{sigchi}"
-      ("" . "")))))
+      ("" . ""))))
  '(org-latex-default-packages-alist
-   (quote
-    (("AUTO" "inputenc" t)
+   '(("AUTO" "inputenc" t)
      ("T1" "fontenc" t)
      ("" "fixltx2e" nil)
      ("" "graphicx" t)
@@ -778,17 +767,15 @@ static char *gnus-pointer[] = {
      ("" "textcomp" t)
      ("" "amssymb" t)
      ("" "capt-of" nil)
-     ("colorlinks=true" "hyperref" t))))
- '(org-latex-listings (quote minted))
+     ("colorlinks=true" "hyperref" t)))
+ '(org-latex-listings 'minted)
  '(org-latex-prefer-user-labels t)
  '(package-selected-packages
-   (quote
-    (forge tramp php-mode racket-mode flycheck-inline eglot elixir-mode hindent glsl-mode carbon-now-sh flycheck-irony irony-eldoc company-irony irony paredit js2-mode cargo rust-mode reason-mode tide flycheck csharp-mode wgrep company-sourcekit swift-mode toml-mode yapfify mocha recompile-on-save prettier-js typescript-mode company-jedi csv-mode web-mode-edit-element yaml-mode xterm-color wgrep-ag web-mode vagrant-tramp unfill undo-tree tuareg tern string-inflection ssh smex smartparens rich-minority rcirc-color racer projectile org nodejs-repl neotree multi-term mmm-mode markdown-mode magit lua-mode image+ haskell-mode go-mode flycheck-rust exec-path-from-shell elpy elm-mode eimp deft company-racer coffee-mode clojure-mode cdlatex c-eldoc buttercup auctex anzu ag)))
- '(projectile-mode-line (quote (:eval (format " P[%s]" (projectile-project-name)))))
+   '(forge tramp php-mode racket-mode flycheck-inline eglot elixir-mode hindent glsl-mode carbon-now-sh flycheck-irony irony-eldoc company-irony irony paredit js2-mode cargo rust-mode reason-mode tide flycheck csharp-mode wgrep company-sourcekit swift-mode toml-mode yapfify mocha recompile-on-save prettier-js typescript-mode company-jedi csv-mode web-mode-edit-element yaml-mode xterm-color wgrep-ag web-mode vagrant-tramp unfill undo-tree tuareg tern string-inflection ssh smex smartparens rich-minority rcirc-color racer projectile org nodejs-repl neotree multi-term mmm-mode markdown-mode magit lua-mode image+ haskell-mode go-mode flycheck-rust exec-path-from-shell elpy elm-mode eimp deft company-racer coffee-mode clojure-mode cdlatex c-eldoc buttercup auctex anzu ag))
+ '(projectile-mode-line '(:eval (format " P[%s]" (projectile-project-name))))
  '(python-shell-interpreter "python3")
  '(safe-local-variable-values
-   (quote
-    ((verilog-library-files "./cpu.v" "../../cartridge_interface.v" "../../NES_controller.v")
+   '((verilog-library-files "./cpu.v" "../../cartridge_interface.v" "../../NES_controller.v")
      (verilog-library-directories "." "../../fpgaboy_files/" "../..")
      (c-file-style . ruby)
      (c-eldoc-includes . "-I/Users/osnr/Dropbox/classes/cs140/pintos/src -I/Users/osnr/Dropbox/classes/cs140/pintos/src/lib -I/Users/osnr/Dropbox/classes/cs140/pintos/src/lib/kernel")
@@ -796,14 +783,13 @@ static char *gnus-pointer[] = {
      (flycheck-gcc-include-path "/Users/osnr/Dropbox/classes/cs140/pintos/src" "/Users/osnr/Dropbox/classes/cs140/pintos/src/lib" "/Users/osnr/Dropbox/classes/cs140/pintos/src/lib/kernel")
      (flycheck-gcc-args "-DUSERPROG" "-DVM")
      (flycheck-c/c++-gcc-executable . "i386-elf-gcc")
-     (flycheck-checker . c/c++-gcc))))
+     (flycheck-checker . c/c++-gcc)))
  '(tool-bar-mode nil)
  '(typescript-auto-indent-flag nil)
  '(typescript-indent-level 2)
  '(vc-annotate-background nil)
  '(vc-annotate-color-map
-   (quote
-    ((20 . "#c82829")
+   '((20 . "#c82829")
      (40 . "#f5871f")
      (60 . "#eab700")
      (80 . "#718c00")
@@ -820,18 +806,14 @@ static char *gnus-pointer[] = {
      (300 . "#c82829")
      (320 . "#f5871f")
      (340 . "#eab700")
-     (360 . "#718c00"))))
+     (360 . "#718c00")))
  '(vc-annotate-very-old-color nil)
  '(verilog-indent-level 4)
  '(verilog-indent-level-declaration 4)
  '(verilog-indent-level-module 4)
  '(web-mode-attr-indent-offset 2)
  '(web-mode-code-indent-offset 2)
- '(web-mode-comment-formats
-   (quote
-    (("java" . "/*")
-     ("php" . "/*")
-     ("javascript" . "//"))))
+ '(web-mode-comment-formats '(("java" . "/*") ("php" . "/*") ("javascript" . "//")))
  '(web-mode-enable-auto-indentation nil)
  '(web-mode-enable-auto-quoting nil)
  '(web-mode-enable-comment-interpolation t)
