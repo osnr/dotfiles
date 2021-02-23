@@ -360,7 +360,7 @@
                            tab-screenshot-path))
     (shell-command
      (let-alist rect
-       (format "convert %s -crop %fx%f+%f+%f -fill none -fuzz 10%% -draw 'color 0,0 floodfill' %s"
+       (format "convert %s -crop %fx%f+%f+%f -bordercolor white -border 1 -fill none -fuzz 10%% -draw 'color 0,0 floodfill' -shave 1x1 %s"
                tab-screenshot-path
                (* 2 .width) (* 2 .height) (* 2 .left) (* 2 .top)
                tweet-screenshot-path)))
