@@ -384,41 +384,46 @@
 
   (interactive)
 
-  (org-md-export-as-markdown)
+  (let ((title (car (plist-get (org-export-get-environment) ':title))))
+    (org-md-export-as-markdown)
 
-  (mark-whole-buffer)
-  (unfill-region (point-min) (point-max))
-  (deactivate-mark)
+    (mark-whole-buffer)
+    (unfill-region (point-min) (point-max))
+    (deactivate-mark)
 
-  ;; remove # Footnotes
-  (goto-char (point-min))
-  (search-forward "# Footnotes" nil t)
-  (replace-match "")
+    ;; remove # Footnotes
+    (goto-char (point-min))
+    (search-forward "# Footnotes" nil t)
+    (replace-match "")
 
-  ;; TODO: convert images, upload?
-  ;; TODO: I need a faster upload strategy
+    ;; TODO: convert images, upload?
+    ;; TODO: I need a faster upload strategy
 
-  ;; convert image URLs
-  (goto-char (point-min))
-  (while (search-forward "/Users/osnr/Code/newsletters/" nil t)
-    (replace-match "https://omar.website/newsletters/"))
+    ;; convert image URLs
+    (goto-char (point-min))
+    (while (search-forward "/Users/osnr/Code/newsletters/" nil t)
+      (replace-match "https://omar.website/newsletters/"))
 
-  (let ((title (car (plist-get (org-export-get-environment) ':title)))
-        (tab-path (or (find-gh-tab-path)
-                      (progn
-                        (new-tab "https://github.com/sponsors/osnr/dashboard/updates/new")
-                        (sleep-for 0.2)
-                        (find-gh-tab-path)))))
+    ;; TODO: caption->URL
+    (goto-char (point-min))
+    (while (re-search-forward "!\\[img\\](\\([^ ]+\\)\\(?: \"<\\([^)]+\\)>\"\\)?)" nil t)
+      (replace-match "<img src=\"\\1\" width=\"400\">"))
 
+    ;; TODO: widths
 
-    ;; bring to front
-    (activate-tab tab-path)
-    (focus-window (concat (file-name-as-directory tab-path) "window"))
+    (let ((tab-path (or (find-gh-tab-path)
+                        (progn
+                          (new-tab "https://github.com/sponsors/osnr/dashboard/updates/new")
+                          (sleep-for 0.2)
+                          (find-gh-tab-path)))))
+      ;; bring to front
+      (activate-tab tab-path)
+      (focus-window (concat (file-name-as-directory tab-path) "window"))
 
-    ;; fill in title from title
-    (write-region title nil (concat tab-path "/inputs/update_subject.txt"))
-    ;; fill in body from body
-    (write-region (point-min) (point-max) (concat tab-path "/inputs/update_body.txt"))))
+      ;; fill in title from title
+      (write-region title nil (concat tab-path "/inputs/update_subject.txt"))
+      ;; fill in body from body
+      (write-region (point-min) (point-max) (concat tab-path "/inputs/update_body.txt")))))
 
 (add-to-list 'image-type-file-name-regexps '("\\.pdf\\'" . imagemagick))
 (add-to-list 'image-file-name-extensions "pdf")
