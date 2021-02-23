@@ -295,7 +295,7 @@
 (setq deft-use-filter-string-for-filename t)
 (setq deft-text-mode 'org-mode)
 
-(defun newsletter-insert-image (url)
+(defun newsletter-insert-image (url &optional link-url)
   (let* ((date-folder (file-name-as-directory (file-name-sans-extension (buffer-file-name))))
          (target-name (concat date-folder
                               (read-string (concat "Image name for "
@@ -306,7 +306,7 @@
 
     (url-copy-file url target-name) ; copy image to date-folder
     (magit-stage-file target-name)
-    (insert (format "[[%s]]" target-name))
+    (insert (format "#+CAPTION: %s\n[[%s]]" (or link-url target-name) target-name))
     (org-display-inline-images t t)))
 
 (defun newsletter-buffer-p ()
@@ -328,11 +328,9 @@
 
 
 (defun newsletter-embed-tweet ()
-  (defun tabfs-create-eval (tab-path expr)
+  (defun tabfs-eval (tab-path expr)
     (let ((eval-path (concat (file-name-as-directory tab-path) "evals/" expr)))
-      (shell-command (concat "touch \"" eval-path "\""))))
-  (defun tabfs-get-eval-result (tab-path expr)
-    (let ((eval-path (concat (file-name-as-directory tab-path) "evals/" expr)))
+      (shell-command (concat "touch \"" eval-path "\""))
       (with-temp-buffer (insert-file-contents eval-path) (buffer-string))))
   
   (interactive)
@@ -347,9 +345,11 @@
   ;; FIXME: not having JSON.stringify crashes Safari???
   (let* ((tab-path "/Users/osnr/t/tabs/last-focused")
 
+         (tweet-url-expr "document.querySelector('.EmbedCode-code').innerText.match('a href=.(https:..twitter.com.+?).>')[1]")
+         (tweet-url (json-read-from-string (tabfs-eval tab-path tweet-url-expr)))
+
          (rect-expr "JSON.stringify(document.querySelector('iframe').getBoundingClientRect())")
-         (rect-string-string (progn (tabfs-create-eval tab-path rect-expr)
-                                    (tabfs-get-eval-result tab-path rect-expr)))
+         (rect-string-string (tabfs-eval tab-path rect-expr))
          (rect-string (json-read-from-string rect-string-string))
          (rect (json-read-from-string rect-string))
 
@@ -364,8 +364,9 @@
                tab-screenshot-path
                (* 2 .width) (* 2 .height) (* 2 .left) (* 2 .top)
                tweet-screenshot-path)))
-    tweet-screenshot-path
-    (shell-command (concat "open " tweet-screenshot-path))))
+
+    (newsletter-insert-image (concat "file://" tweet-screenshot-path)
+                             tweet-url)))
 
 (add-hook 'org-mode-hook
           (lambda ()
@@ -382,6 +383,26 @@
     (car (file-expand-wildcards "~/Code/tabfs/fs/mnt/tabs/by-title/GitHub_Sponsors_dashboard___Updates*")))
 
   (interactive)
+
+  (org-md-export-as-markdown)
+
+  (mark-whole-buffer)
+  (unfill-region (point-min) (point-max))
+  (deactivate-mark)
+
+  ;; remove # Footnotes
+  (goto-char (point-min))
+  (search-forward "# Footnotes" nil t)
+  (replace-match "")
+
+  ;; TODO: convert images, upload?
+  ;; TODO: I need a faster upload strategy
+
+  ;; convert image URLs
+  (goto-char (point-min))
+  (while (search-forward "/Users/osnr/Code/newsletters/" nil t)
+    (replace-match "https://omar.website/newsletters/"))
+
   (let ((title (car (plist-get (org-export-get-environment) ':title)))
         (tab-path (or (find-gh-tab-path)
                       (progn
@@ -389,15 +410,6 @@
                         (sleep-for 0.2)
                         (find-gh-tab-path)))))
 
-    (org-md-export-as-markdown)
-
-    (mark-whole-buffer)
-    (unfill-region (point-min) (point-max))
-    (deactivate-mark)
-
-    ;; convert images, upload?
-    ;; I need a faster upload strategy
-    ;; convert image URLs
 
     ;; bring to front
     (activate-tab tab-path)
