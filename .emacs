@@ -347,8 +347,6 @@
   ;; FIXME: not having JSON.stringify crashes Safari???
   (let* ((tab-path "/Users/osnr/t/tabs/last-focused")
 
-         (_ (tabfs-create-eval tab-path "document.body.style.background = 'rgb(255, 0, 255)'"))
-
          (rect-expr "JSON.stringify(document.querySelector('iframe').getBoundingClientRect())")
          (rect-string-string (progn (tabfs-create-eval tab-path rect-expr)
                                     (tabfs-get-eval-result tab-path rect-expr)))
@@ -362,18 +360,12 @@
                            tab-screenshot-path))
     (shell-command
      (let-alist rect
-       (format "convert %s -transparent 'rgb(255, 0, 255)' -crop %fx%f+%f+%f %s"
+       (format "convert %s -crop %fx%f+%f+%f -fill none -fuzz 10%% -draw 'color 0,0 floodfill' %s"
                tab-screenshot-path
                (* 2 .width) (* 2 .height) (* 2 .left) (* 2 .top)
                tweet-screenshot-path)))
     tweet-screenshot-path
-    (shell-command (concat "open " tweet-screenshot-path)))
-
-  ;; set background to pink
-  ;; grab screenshot
-  ;; pink -> transparent
-  ;; call newsletter-insert-image
-  )
+    (shell-command (concat "open " tweet-screenshot-path))))
 
 (add-hook 'org-mode-hook
           (lambda ()
