@@ -295,31 +295,85 @@
 (setq deft-use-filter-string-for-filename t)
 (setq deft-text-mode 'org-mode)
 
+(defun newsletter-insert-image (url)
+  (let* ((date-folder (file-name-as-directory (file-name-sans-extension (buffer-file-name))))
+         (target-name (concat date-folder
+                              (read-string (concat "Image name for "
+                                                   (file-name-nondirectory url)
+                                                   ": ")))))
+    ;; create date-folder for newsletter if doesn't exist
+    (unless (file-exists-p date-folder) (make-directory date-folder))
+
+    (url-copy-file url target-name) ; copy image to date-folder
+    (magit-stage-file target-name)
+    (insert (format "[[%s]]" target-name))
+    (org-display-inline-images t t)))
+
+(defun newsletter-buffer-p ()
+  (string-prefix-p "/Users/osnr/Code/newsletters" (expand-file-name (buffer-file-name))))
+
 (defun org-image-dnd-protocol (url action)
   (when (and (derived-mode-p 'org-mode)
              (string-match "\\(png\\|jp[e]?g\\)\\>" url))
     (x-focus-frame nil) ; do i need this?
     
-    (when (string-prefix-p "/Users/osnr/Code/newsletters" (expand-file-name (buffer-file-name)))
+    (when (newsletter-buffer-p)
       (when (string-prefix-p "file:///var/folders/" url)
         ;; it's from Screenotate; Esc out of Screenotate
         (shell-command "osascript -e 'tell application \"System Events\" to key code 53'"))
 
-      (let* ((date-folder (file-name-as-directory (file-name-sans-extension (buffer-file-name))))
-             (target-name (concat date-folder
-                                  (read-string (concat "Image name for "
-                                                       (file-name-nondirectory url)
-                                                       ": ")))))
-        ;; create date-folder for newsletter if doesn't exist
-        (unless (file-exists-p date-folder) (make-directory date-folder))
-
-        (url-copy-file url target-name) ; copy image to date-folder
-        (magit-stage-file target-name)
-        (insert (format "[[%s]]" target-name))))
-
-    (org-display-inline-images t t)))
+      (newsletter-insert-image url))))
 
 (add-to-list 'dnd-protocol-alist '("\\(png\\|jp[e]?g\\)\\>" . org-image-dnd-protocol))
+
+
+(defun newsletter-embed-tweet ()
+  (defun tabfs-create-eval (tab-path expr)
+    (let ((eval-path (concat (file-name-as-directory tab-path) "evals/" expr)))
+      (shell-command (concat "touch \"" eval-path "\""))))
+  (defun tabfs-get-eval-result (tab-path expr)
+    (let ((eval-path (concat (file-name-as-directory tab-path) "evals/" expr)))
+      (with-temp-buffer (insert-file-contents eval-path) (buffer-string))))
+  
+  (interactive)
+
+  ;; ensure that browser is focused on Publish Tweet
+  (unless (with-temp-buffer
+            (insert-file-contents "/Users/osnr/t/tabs/last-focused/title.txt")
+            (string-prefix-p "Twitter Publish" (buffer-string)))
+    (error "please focus on publish tweet dude"))
+
+  ;; get coords of tweet embed
+  ;; FIXME: not having JSON.stringify crashes Safari???
+  (let* ((tab-path "/Users/osnr/t/tabs/last-focused")
+
+         (_ (tabfs-create-eval tab-path "document.body.style.background = 'rgb(255, 0, 255)'"))
+
+         (rect-expr "JSON.stringify(document.querySelector('iframe').getBoundingClientRect())")
+         (rect-string-string (progn (tabfs-create-eval tab-path rect-expr)
+                                    (tabfs-get-eval-result tab-path rect-expr)))
+         (rect-string (json-read-from-string rect-string-string))
+         (rect (json-read-from-string rect-string))
+
+         (tab-screenshot-path (make-temp-file "tab-screenshot-" nil ".png"))
+         (tweet-screenshot-path (make-temp-file "tweet-screenshot-" nil ".png")))
+    ;; todo fuzz
+    (shell-command (concat "cp /Users/osnr/t/tabs/last-focused/window/visible-tab.png "
+                           tab-screenshot-path))
+    (shell-command
+     (let-alist rect
+       (format "convert %s -transparent 'rgb(255, 0, 255)' -crop %fx%f+%f+%f %s"
+               tab-screenshot-path
+               (* 2 .width) (* 2 .height) (* 2 .left) (* 2 .top)
+               tweet-screenshot-path)))
+    tweet-screenshot-path
+    (shell-command (concat "open " tweet-screenshot-path)))
+
+  ;; set background to pink
+  ;; grab screenshot
+  ;; pink -> transparent
+  ;; call newsletter-insert-image
+  )
 
 (add-hook 'org-mode-hook
           (lambda ()
@@ -328,20 +382,20 @@
             (turn-on-visual-line-mode)
             (local-unset-key (kbd "C-'"))))
 
-(defun export-newsletter-markdown ()
+(defun newsletter-export-markdown ()
   (defun new-tab (url) (write-region url nil "~/Code/tabfs/fs/mnt/tabs/create"))
   (defun activate-tab (tab-path) (write-region "true" nil (concat (file-name-as-directory tab-path) "active")))
   (defun focus-window (window-path) (write-region "true" nil (concat (file-name-as-directory window-path) "focused")))
-  (defun find-new-newsletter-tab-path ()
+  (defun find-gh-tab-path ()
     (car (file-expand-wildcards "~/Code/tabfs/fs/mnt/tabs/by-title/GitHub_Sponsors_dashboard___Updates*")))
 
   (interactive)
   (let ((title (car (plist-get (org-export-get-environment) ':title)))
-        (tab-path (or (find-new-newsletter-tab-path)
+        (tab-path (or (find-gh-tab-path)
                       (progn
                         (new-tab "https://github.com/sponsors/osnr/dashboard/updates/new")
                         (sleep-for 0.2)
-                        (find-new-newsletter-tab-path)))))
+                        (find-gh-tab-path)))))
 
     (org-md-export-as-markdown)
 
@@ -350,6 +404,7 @@
     (deactivate-mark)
 
     ;; convert images, upload?
+    ;; I need a faster upload strategy
     ;; convert image URLs
 
     ;; bring to front
@@ -831,5 +886,6 @@ static char *gnus-pointer[] = {
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:family "Operator Mono SSm" :foundry "nil" :slant normal :weight normal :height 131 :width normal)))))
+ '(default ((t (:family "Operator Mono SSm" :foundry "nil" :slant normal :weight normal :height 131 :width normal))))
+ '(font-lock-comment-face ((t (:foreground "#73d216" :slant italic)))))
 (setq-default line-spacing 5)
