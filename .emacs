@@ -404,13 +404,13 @@
     (while (search-forward "/Users/osnr/Code/newsletters/" nil t)
       (replace-match "https://omar.website/newsletters/"))
 
-    ;; TODO: caption->URL
+    ;; caption->URL, width
     (goto-char (point-min))
     (while (re-search-forward "!\\[img\\](\\([^ ]+\\)\\(?: \"<\\([^)]+\\)>\"\\)?)" nil t)
-      (replace-match "<img src=\"\\1\" width=\"400\">"))
-
-    ;; TODO: widths
-
+      (if (match-string 2) ; if there's a caption (link target)
+          (replace-match "<a href=\"\\2\"><img src=\"\\1\" width=\"400\"></a>")
+        (replace-match "<a href=\"\\1\"><img src=\"\\1\" width=\"400\"></a>")))
+    
     (let ((tab-path (or (find-gh-tab-path)
                         (progn
                           (new-tab "https://github.com/sponsors/osnr/dashboard/updates/new")
