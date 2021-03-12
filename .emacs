@@ -329,7 +329,7 @@
 
 (defun newsletter-embed-tweet ()
   (defun tabfs-eval (tab-path expr)
-    (let ((eval-path (concat (file-name-as-directory tab-path) "evals/" expr)))
+    (let ((eval-path (concat (file-name-as-directory tab-path) "watches/" expr)))
       (shell-command (concat "touch \"" eval-path "\""))
       (with-temp-buffer (insert-file-contents eval-path) (buffer-string))))
   
@@ -406,7 +406,7 @@
 
     ;; caption->URL, width
     (goto-char (point-min))
-    (while (re-search-forward "!\\[img\\](\\([^ ]+\\)\\(?: \"<\\([^)]+\\)>\"\\)?)" nil t)
+    (while (re-search-forward "!\\[img\\](\\([^ ]+\\)\\(?: \"<?\\([^)>]+\\)>?\"\\)?)" nil t)
       (if (match-string 2) ; if there's a caption (link target)
           (replace-match "<a href=\"\\2\"><img src=\"\\1\" width=\"400\"></a>")
         (replace-match "<a href=\"\\1\"><img src=\"\\1\" width=\"400\"></a>")))
@@ -492,11 +492,7 @@
 (add-to-list 'safe-local-variable-values
              '(c-eldoc-includes . "-I/Users/osnr/dev/cs107e/staff/libpi/include"))
 
-;; (require 'srefactor)
-;; (add-to-list 'semantic-default-submodes 'global-semantic-stickyfunc-mode)
-;; (semantic-mode 1)
-;; (define-key c-mode-map (kbd "M-RET") 'srefactor-refactor-at-point)
-;; (define-key c++-mode-map (kbd "M-RET") 'srefactor-refactor-at-point)
+(require 'realgud-lldb)
 
 ;; C++
 
@@ -505,6 +501,8 @@
 (add-hook 'c++-mode-hook 'company-mode)
 (add-hook 'c++-mode-hook 'eldoc-mode)
 (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
+(eval-after-load 'flycheck
+  '(add-hook 'flycheck-mode-hook #'flycheck-irony-setup))
 
 ;; lols
 (setq-default indent-tabs-mode nil)
@@ -714,6 +712,11 @@
        ;; Use opam switch to lookup ocamlmerlin binary
        (setq merlin-command 'opam)))
 
+;; color theme
+(add-to-list 'custom-theme-load-path "~/.emacs.d/moe-theme.el/")
+(add-to-list 'load-path "~/.emacs.d/moe-theme.el/")
+(require 'moe-theme)
+
 ;; custom-set-variables
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -731,7 +734,9 @@
  '(compilation-always-kill t)
  '(compilation-ask-about-save nil)
  '(compilation-error-regexp-alist '(python-tracebacks-and-caml gnu))
- '(custom-enabled-themes '(tango-dark))
+ '(custom-enabled-themes '(moe-dark))
+ '(custom-safe-themes
+   '("27a1dd6378f3782a593cc83e108a35c2b93e5ecc3bd9057313e1d88462701fcd" default))
  '(diary-entry-marker 'font-lock-variable-name-face)
  '(dired-use-ls-dired nil)
  '(emms-mode-line-icon-image-cache
@@ -835,7 +840,7 @@ static char *gnus-pointer[] = {
  '(org-latex-listings 'minted)
  '(org-latex-prefer-user-labels t)
  '(package-selected-packages
-   '(forge tramp php-mode racket-mode flycheck-inline eglot elixir-mode hindent glsl-mode carbon-now-sh flycheck-irony irony-eldoc company-irony irony paredit js2-mode cargo rust-mode reason-mode tide flycheck csharp-mode wgrep company-sourcekit swift-mode toml-mode yapfify mocha recompile-on-save prettier-js typescript-mode company-jedi csv-mode web-mode-edit-element yaml-mode xterm-color wgrep-ag web-mode vagrant-tramp unfill undo-tree tuareg tern string-inflection ssh smex smartparens rich-minority rcirc-color racer projectile org nodejs-repl neotree multi-term mmm-mode markdown-mode magit lua-mode image+ haskell-mode go-mode flycheck-rust exec-path-from-shell elpy elm-mode eimp deft company-racer coffee-mode clojure-mode cdlatex c-eldoc buttercup auctex anzu ag))
+   '(moe-theme realgud realgud-lldb forge tramp php-mode racket-mode flycheck-inline eglot elixir-mode hindent glsl-mode carbon-now-sh flycheck-irony irony-eldoc company-irony irony paredit js2-mode cargo rust-mode reason-mode tide flycheck csharp-mode wgrep company-sourcekit swift-mode toml-mode yapfify mocha recompile-on-save prettier-js typescript-mode company-jedi csv-mode web-mode-edit-element yaml-mode xterm-color wgrep-ag web-mode vagrant-tramp unfill undo-tree tuareg tern string-inflection ssh smex smartparens rich-minority rcirc-color racer projectile org nodejs-repl neotree multi-term mmm-mode markdown-mode magit lua-mode image+ haskell-mode go-mode flycheck-rust exec-path-from-shell elpy elm-mode eimp deft company-racer coffee-mode clojure-mode cdlatex c-eldoc buttercup auctex anzu ag))
  '(projectile-mode-line '(:eval (format " P[%s]" (projectile-project-name))))
  '(python-shell-interpreter "python3")
  '(safe-local-variable-values
@@ -896,5 +901,7 @@ static char *gnus-pointer[] = {
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(default ((t (:family "Operator Mono SSm" :foundry "nil" :slant normal :weight normal :height 131 :width normal))))
- '(font-lock-comment-face ((t (:foreground "#73d216" :slant italic)))))
+ '(font-lock-comment-delimiter-face ((t (:foreground "#a1db00" :slant italic))))
+ '(font-lock-comment-face ((t (:foreground "#a1db00" :slant italic))))
+ '(web-mode-comment-face ((t (:foreground "#a1db00" :slant italic)))))
 (setq-default line-spacing 5)
