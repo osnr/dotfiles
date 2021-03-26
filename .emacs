@@ -362,7 +362,7 @@
      (let-alist rect
        (format "convert %s -crop %fx%f+%f+%f -bordercolor white -border 1 -fill none -fuzz 10%% -draw 'color 0,0 floodfill' -shave 1x1 %s"
                tab-screenshot-path
-               (* 2 .width) (* 2 .height) (* 2 .left) (* 2 .top)
+               (* 2 .width) (+ (* 2 .height) 2) (* 2 .left) (* 2 .top)
                tweet-screenshot-path)))
 
     (newsletter-insert-image (concat "file://" tweet-screenshot-path)
@@ -380,15 +380,16 @@
   (defun activate-tab (tab-path) (write-region "true" nil (concat (file-name-as-directory tab-path) "active")))
   (defun focus-window (window-path) (write-region "true" nil (concat (file-name-as-directory window-path) "focused")))
   (defun find-gh-tab-path ()
-    (car (file-expand-wildcards "~/Code/tabfs/fs/mnt/tabs/by-title/GitHub_Sponsors_dashboard___Updates*")))
+    (car (file-expand-wildcards "~/Code/tabfs/fs/mnt/tabs/by-title/GitHub_Sponsors_dashboard*Updates*")))
 
   (interactive)
 
   (let ((title (car (plist-get (org-export-get-environment) ':title))))
     (org-md-export-as-markdown)
+    (markdown-mode)
 
     (mark-whole-buffer)
-    (unfill-region (point-min) (point-max))
+    (unfill-paragraph)
     (deactivate-mark)
 
     ;; remove # Footnotes
@@ -458,6 +459,7 @@
     (c-set-style "linux")
     (setq c-basic-offset 4)))
 (add-hook 'c-mode-hook 'maybe-qemu-style)
+(add-hook 'c-mode-hook 'irony-eldoc)
 
 (defun maybe-cs107e-style ()
   (when (and buffer-file-name
@@ -499,7 +501,7 @@
 (add-hook 'c++-mode-hook 'irony-mode)
 (add-hook 'c++-mode-hook 'flycheck-mode)
 (add-hook 'c++-mode-hook 'company-mode)
-(add-hook 'c++-mode-hook 'eldoc-mode)
+(add-hook 'c++-mode-hook 'irony-eldoc)
 (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
 (eval-after-load 'flycheck
   '(add-hook 'flycheck-mode-hook #'flycheck-irony-setup))
@@ -518,7 +520,6 @@
 
 ;; web-mode
 (require 'web-mode)
-(add-to-list 'auto-mode-alist '("\\.js\\'" . web-mode))
 (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
 (add-hook 'web-mode-hook
 	  (lambda ()
@@ -571,9 +572,7 @@
               (setup-tide-mode))))
 
 (add-to-list 'auto-mode-alist '("\\.mjs\\'" . js2-mode))
-(add-hook 'js2-mode-hook
-          (lambda ()
-            (prettier-js-mode)))
+(add-to-list 'auto-mode-alist '("\\.js\\'" . js2-mode))
 
 ;; Clojure
 (add-hook 'clojure-mode-hook
