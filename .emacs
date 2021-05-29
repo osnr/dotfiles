@@ -404,13 +404,16 @@
     (goto-char (point-min))
     (while (search-forward "/Users/osnr/Code/newsletters/" nil t)
       (replace-match "https://omar.website/newsletters/"))
+    (goto-char (point-min))
+    (while (search-forward "file://https://" nil t)
+      (replace-match "https://"))
 
     ;; caption->URL, width
     (goto-char (point-min))
     (while (re-search-forward "!\\[img\\](\\([^ ]+\\)\\(?: \"<?\\([^)>]+\\)>?\"\\)?)" nil t)
       (if (match-string 2) ; if there's a caption (link target)
-          (replace-match "<a href=\"\\2\"><img src=\"\\1\" width=\"400\"></a>")
-        (replace-match "<a href=\"\\1\"><img src=\"\\1\" width=\"400\"></a>")))
+          (replace-match "<a href=\"\\2\"><img src=\"\\1\" width=\"500\"></a>")
+        (replace-match "<a href=\"\\1\"><img src=\"\\1\" width=\"500\"></a>")))
     
     (let ((tab-path (or (find-gh-tab-path)
                         (progn
@@ -429,7 +432,7 @@
 (add-to-list 'image-type-file-name-regexps '("\\.pdf\\'" . imagemagick))
 (add-to-list 'image-file-name-extensions "pdf")
 (setq imagemagick-types-inhibit (remove 'PDF imagemagick-types-inhibit))
-(setq org-image-actual-width 400)
+(setq org-image-actual-width 500)
 
 (defadvice org-display-inline-images (around center-images activate)
   (let ((create-image-orig (symbol-function 'create-image)))
@@ -451,7 +454,6 @@
         "xelatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
 (setq-default TeX-engine 'xetex)
 
-
 ;; C
 (defun maybe-qemu-style ()
   (when (and buffer-file-name
@@ -459,6 +461,7 @@
     (c-set-style "linux")
     (setq c-basic-offset 4)))
 (add-hook 'c-mode-hook 'maybe-qemu-style)
+(add-hook 'c-mode-hook 'irony-mode)
 (add-hook 'c-mode-hook 'irony-eldoc)
 
 (defun maybe-cs107e-style ()
@@ -497,12 +500,12 @@
 (require 'realgud-lldb)
 
 ;; C++
-
 (add-hook 'c++-mode-hook 'irony-mode)
 (add-hook 'c++-mode-hook 'flycheck-mode)
 (add-hook 'c++-mode-hook 'company-mode)
 (add-hook 'c++-mode-hook 'irony-eldoc)
 (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
+
 (eval-after-load 'flycheck
   '(add-hook 'flycheck-mode-hook #'flycheck-irony-setup))
 
@@ -573,6 +576,18 @@
 
 (add-to-list 'auto-mode-alist '("\\.mjs\\'" . js2-mode))
 (add-to-list 'auto-mode-alist '("\\.js\\'" . js2-mode))
+
+(defun hot-reload-tabfs ()
+  ;; copy on top of runtime background.js
+  (copy-file "/Users/osnr/Code/tabfs/extension/background.js" "/Users/osnr/t/runtime/background.js" t)
+  (message "hot reloaded"))
+
+(add-hook 'js2-mode-hook
+          (defun js2-setup+ ()
+            (when (string-suffix-p "/tabfs/extension/background.js" buffer-file-name)
+              (add-hook 'after-save-hook
+                        #'hot-reload-tabfs
+                        nil 'local))))
 
 ;; Clojure
 (add-hook 'clojure-mode-hook
@@ -786,6 +801,7 @@ static char *gnus-pointer[] = {
 \"###....####.######\",
 \"###..######.######\",
 \"###########.######\" };") t)
+ '(irony-supported-major-modes '(c++-mode c-mode objc-mode arduino-mode))
  '(js-curly-indent-offset 0)
  '(js-indent-level 2)
  '(large-file-warning-threshold 50000000)
@@ -839,7 +855,7 @@ static char *gnus-pointer[] = {
  '(org-latex-listings 'minted)
  '(org-latex-prefer-user-labels t)
  '(package-selected-packages
-   '(moe-theme realgud realgud-lldb forge tramp php-mode racket-mode flycheck-inline eglot elixir-mode hindent glsl-mode carbon-now-sh flycheck-irony irony-eldoc company-irony irony paredit js2-mode cargo rust-mode reason-mode tide flycheck csharp-mode wgrep company-sourcekit swift-mode toml-mode yapfify mocha recompile-on-save prettier-js typescript-mode company-jedi csv-mode web-mode-edit-element yaml-mode xterm-color wgrep-ag web-mode vagrant-tramp unfill undo-tree tuareg tern string-inflection ssh smex smartparens rich-minority rcirc-color racer projectile org nodejs-repl neotree multi-term mmm-mode markdown-mode magit lua-mode image+ haskell-mode go-mode flycheck-rust exec-path-from-shell elpy elm-mode eimp deft company-racer coffee-mode clojure-mode cdlatex c-eldoc buttercup auctex anzu ag))
+   '(lua-mode flycheck-irony irony irony-eldoc arduino-mode moe-theme realgud realgud-lldb forge tramp php-mode racket-mode flycheck-inline eglot elixir-mode hindent glsl-mode carbon-now-sh paredit js2-mode cargo reason-mode csharp-mode wgrep company-sourcekit swift-mode toml-mode yapfify mocha recompile-on-save prettier-js company-jedi csv-mode web-mode-edit-element yaml-mode wgrep-ag vagrant-tramp unfill undo-tree tuareg tern string-inflection ssh smex smartparens rich-minority rcirc-color racer projectile nodejs-repl neotree multi-term mmm-mode image+ haskell-mode go-mode flycheck-rust exec-path-from-shell elpy elm-mode eimp company-racer coffee-mode clojure-mode cdlatex c-eldoc buttercup auctex anzu ag))
  '(projectile-mode-line '(:eval (format " P[%s]" (projectile-project-name))))
  '(python-shell-interpreter "python3")
  '(safe-local-variable-values
@@ -899,7 +915,7 @@ static char *gnus-pointer[] = {
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:family "Operator Mono SSm" :foundry "nil" :slant normal :weight normal :height 131 :width normal))))
+ '(default ((t (:family "Operator Mono SSm" :foundry "nil" :slant normal :weight semi-light :height 131 :width normal))))
  '(font-lock-comment-delimiter-face ((t (:foreground "#a1db00" :slant italic))))
  '(font-lock-comment-face ((t (:foreground "#a1db00" :slant italic))))
  '(web-mode-comment-face ((t (:foreground "#a1db00" :slant italic)))))
