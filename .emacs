@@ -411,10 +411,16 @@
 
     ;; caption->URL, width
     (goto-char (point-min))
-    (while (re-search-forward "!\\[img\\](\\([^ ]+\\)\\(?: \"<?\\([^)>]+\\)>?\"\\)?)" nil t)
-      (if (match-string 2) ; if there's a caption (link target)
-          (replace-match "<a href=\"\\2\"><img src=\"\\1\" width=\"500\"></a>")
-        (replace-match "<a href=\"\\1\"><img src=\"\\1\" width=\"500\"></a>")))
+    (while (re-search-forward (concat "!\\[img\\](\\([^ ]+\\)\\(?: \"<?\\([^)>]+\\)>?\"\\)?)"
+                                      "\\(?: \\\\#\\([^\n]*\\)\\)?")
+                              nil t)
+      (let ((attrs (or (match-string 3)
+                       "width=\"500\"")))
+        (if (match-string 2) ; if there's a caption (link target)
+            (replace-match (format "<a href=\"\\2\"><img src=\"\\1\" %s></a>"
+                                   attrs))
+          (replace-match (format "<a href=\"\\1\"><img src=\"\\1\" %s></a>"
+                                 attrs)))))
     
     (let ((tab-path (or (find-gh-tab-path)
                         (progn
