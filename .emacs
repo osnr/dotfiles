@@ -329,9 +329,10 @@
 
 (defun newsletter-embed-tweet ()
   (defun tabfs-eval (tab-path expr)
-    (let ((eval-path (concat (file-name-as-directory tab-path) "watches/" expr)))
-      (shell-command (concat "touch \"" eval-path "\""))
-      (with-temp-buffer (insert-file-contents eval-path) (buffer-string))))
+    (let ((eval-path (concat (file-name-as-directory tab-path) "evals/BOOP.js")))
+      (write-region expr nil eval-path)
+      (with-temp-buffer (insert-file-contents (concat eval-path ".result"))
+                        (buffer-string))))
   
   (interactive)
 
@@ -340,6 +341,19 @@
             (insert-file-contents "/Users/osnr/t/tabs/last-focused/title.txt")
             (string-prefix-p "Twitter Publish" (buffer-string)))
     (error "please focus on publish tweet dude"))
+
+  ;; remove "Tweet your reply"
+  (let* ((tab-path "/Users/osnr/t/tabs/last-focused"))
+    (tabfs-eval tab-path "2 + 3")
+
+    ;; (tabfs-eval tab-path "
+    ;;   const doc = document.querySelector('iframe').contentDocument;
+    ;;   [...doc.querySelectorAll('[role=link]')]
+    ;;     .find(el => el.innerText.includes('Tweet your reply'))
+    ;;     ?.parentElement
+    ;;     ?.remove();
+    ;;   ")
+    )
 
   ;; get coords of tweet embed
   ;; FIXME: not having JSON.stringify crashes Safari???
