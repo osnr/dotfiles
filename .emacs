@@ -328,11 +328,15 @@
 
 
 (defun newsletter-embed-tweet ()
-  (defun tabfs-eval (tab-path expr)
-    (let ((eval-path (concat (file-name-as-directory tab-path) "evals/BOOP.js")))
+  (defun tabfs-eval (tab-path expr &optional all-frames)
+    (let ((eval-path (concat (file-name-as-directory tab-path)
+                             (if all-frames
+                                 "evals/emacs.all-frames.js"
+                               "evals/emacs.js"))))
       (write-region expr nil eval-path)
-      (with-temp-buffer (insert-file-contents (concat eval-path ".result"))
-                        (buffer-string))))
+      (with-temp-buffer
+        (insert-file-contents (concat eval-path ".result"))
+        (buffer-string))))
   
   (interactive)
 
@@ -342,18 +346,16 @@
             (string-prefix-p "Twitter Publish" (buffer-string)))
     (error "please focus on publish tweet dude"))
 
-  ;; remove "Tweet your reply"
+  ;; remove "Tweet your reply", "Share" buttons
   (let* ((tab-path "/Users/osnr/t/tabs/last-focused"))
-    (tabfs-eval tab-path "2 + 3")
-
-    ;; (tabfs-eval tab-path "
-    ;;   const doc = document.querySelector('iframe').contentDocument;
-    ;;   [...doc.querySelectorAll('[role=link]')]
-    ;;     .find(el => el.innerText.includes('Tweet your reply'))
-    ;;     ?.parentElement
-    ;;     ?.remove();
-    ;;   ")
-    )
+    ;; should run in all frames (we only care about iframe w embed in it)
+    (tabfs-eval tab-path "
+      [...document.querySelectorAll('[role=link]')]
+        .find(el => el.innerText.includes('Tweet your reply'))
+        ?.parentElement
+        ?.remove();
+      document.querySelector('[aria-label=Share]')?.remove();
+      " t))
 
   ;; get coords of tweet embed
   ;; FIXME: not having JSON.stringify crashes Safari???
