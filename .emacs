@@ -304,7 +304,7 @@
     ;; create date-folder for newsletter if doesn't exist
     (unless (file-exists-p date-folder) (make-directory date-folder))
 
-    (url-copy-file url target-name) ; copy image to date-folder
+    (url-copy-file url target-name 1) ; copy image to date-folder. will prompt if overwriting
     (magit-stage-file target-name)
     (insert (format "#+CAPTION: %s\n[[%s]]" (or link-url target-name) target-name))
     (org-display-inline-images t t)))
