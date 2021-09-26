@@ -699,6 +699,11 @@
 (setq elpy-rpc-python-command "python3")
 
 
+;; Verilog
+(add-hook 'verilog-mode-hook
+	  (lambda ()
+            (local-unset-key (kbd "C-;"))))
+
 ;; TensorFlow/CUDA
 (setenv "DYLD_LIBRARY_PATH" "/usr/local/cuda/lib")
 
@@ -878,7 +883,7 @@ static char *gnus-pointer[] = {
  '(org-latex-listings 'minted)
  '(org-latex-prefer-user-labels t)
  '(package-selected-packages
-   '(objc-font-lock lua-mode flycheck-irony irony irony-eldoc arduino-mode moe-theme realgud realgud-lldb forge tramp php-mode racket-mode flycheck-inline eglot elixir-mode hindent glsl-mode carbon-now-sh paredit js2-mode cargo reason-mode csharp-mode wgrep company-sourcekit swift-mode toml-mode yapfify mocha recompile-on-save prettier-js company-jedi csv-mode web-mode-edit-element yaml-mode wgrep-ag vagrant-tramp unfill undo-tree tuareg tern string-inflection ssh smex smartparens rich-minority rcirc-color racer projectile nodejs-repl neotree multi-term mmm-mode image+ haskell-mode go-mode flycheck-rust exec-path-from-shell elpy elm-mode eimp company-racer coffee-mode clojure-mode cdlatex c-eldoc buttercup auctex anzu ag))
+   '(spice-mode objc-font-lock lua-mode flycheck-irony irony irony-eldoc arduino-mode moe-theme realgud realgud-lldb forge tramp php-mode racket-mode flycheck-inline eglot elixir-mode hindent glsl-mode carbon-now-sh paredit js2-mode cargo reason-mode csharp-mode wgrep company-sourcekit swift-mode toml-mode yapfify mocha recompile-on-save prettier-js company-jedi csv-mode web-mode-edit-element yaml-mode wgrep-ag vagrant-tramp unfill undo-tree tuareg tern string-inflection ssh smex smartparens rich-minority rcirc-color racer projectile nodejs-repl neotree multi-term mmm-mode image+ haskell-mode go-mode flycheck-rust exec-path-from-shell elpy elm-mode eimp company-racer coffee-mode clojure-mode cdlatex c-eldoc buttercup auctex anzu ag))
  '(projectile-mode-line '(:eval (format " P[%s]" (projectile-project-name))))
  '(python-shell-interpreter "python3")
  '(safe-local-variable-values
