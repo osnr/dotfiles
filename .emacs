@@ -403,16 +403,17 @@
 
   (let ((title (car (plist-get (org-export-get-environment) ':title))))
     (org-md-export-as-markdown)
-    (markdown-mode)
-
+    
     (mark-whole-buffer)
-    (unfill-paragraph)
+    (unfill-paragraph) ; why doesn't this work in markdown-mode?
     (deactivate-mark)
+
+    (markdown-mode)
 
     ;; remove # Footnotes
     (goto-char (point-min))
     (search-forward "# Footnotes" nil t)
-    (replace-match "")
+    (replace-match "---")
 
     ;; TODO: convert images, upload?
     ;; TODO: I need a faster upload strategy
@@ -883,7 +884,7 @@ static char *gnus-pointer[] = {
  '(org-latex-listings 'minted)
  '(org-latex-prefer-user-labels t)
  '(package-selected-packages
-   '(spice-mode objc-font-lock lua-mode flycheck-irony irony irony-eldoc arduino-mode moe-theme realgud realgud-lldb forge tramp php-mode racket-mode flycheck-inline eglot elixir-mode hindent glsl-mode carbon-now-sh paredit js2-mode cargo reason-mode csharp-mode wgrep company-sourcekit swift-mode toml-mode yapfify mocha recompile-on-save prettier-js company-jedi csv-mode web-mode-edit-element yaml-mode wgrep-ag vagrant-tramp unfill undo-tree tuareg tern string-inflection ssh smex smartparens rich-minority rcirc-color racer projectile nodejs-repl neotree multi-term mmm-mode image+ haskell-mode go-mode flycheck-rust exec-path-from-shell elpy elm-mode eimp company-racer coffee-mode clojure-mode cdlatex c-eldoc buttercup auctex anzu ag))
+   '(command-log-mode markdown-mode spice-mode objc-font-lock lua-mode flycheck-irony irony irony-eldoc arduino-mode moe-theme realgud realgud-lldb forge tramp php-mode racket-mode flycheck-inline eglot elixir-mode hindent glsl-mode carbon-now-sh paredit js2-mode cargo reason-mode csharp-mode wgrep company-sourcekit swift-mode toml-mode yapfify mocha recompile-on-save prettier-js company-jedi csv-mode web-mode-edit-element yaml-mode wgrep-ag vagrant-tramp unfill undo-tree tuareg tern string-inflection ssh smex smartparens rich-minority rcirc-color racer projectile nodejs-repl neotree multi-term mmm-mode image+ haskell-mode go-mode flycheck-rust exec-path-from-shell elpy elm-mode eimp company-racer coffee-mode clojure-mode cdlatex c-eldoc buttercup auctex anzu ag))
  '(projectile-mode-line '(:eval (format " P[%s]" (projectile-project-name))))
  '(python-shell-interpreter "python3")
  '(safe-local-variable-values
