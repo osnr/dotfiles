@@ -704,14 +704,16 @@
 (add-hook 'verilog-mode-hook
 	  (lambda ()
             (local-unset-key (kbd "C-;"))))
-(defun chip-view-json ()
+(defun chip-view-json (arg)
   (interactive)
-  ;; copy json file from chip (projectile-project-root)/top_square.json
-  (let* ((temp-json-path (make-temp-file "top_square" nil ".json"))
+  (shell-command "")
+  ;; copy json file from chip (projectile-project-root)/arg
+  (let* ((temp-json-path (make-temp-file "chip-view" nil ".json"))
          (default-directory (file-name-directory temp-json-path))
-         (temp-svg-path (make-temp-file "top_square" nil ".svg")))
-    (shell-command (format "scp %s/top_square.json %s"
+         (temp-svg-path (make-temp-file "chip-view" nil ".svg")))
+    (shell-command (format "scp %s/%s %s"
                            (replace-regexp-in-string "^/ssh:" "" (projectile-project-root))
+                           arg
                            temp-json-path))
     (shell-command (format "netlistsvg %s -o %s"
                            temp-json-path
