@@ -704,6 +704,15 @@
 (add-hook 'verilog-mode-hook
 	  (lambda ()
             (local-unset-key (kbd "C-;"))))
+(defun chip-view-json ()
+  (interactive)
+  ;; copy json file from chip (projectile-project-root)/top_square.json
+  (let* ((temp-json-path (make-temp-file "top_square" nil ".json"))
+         (default-directory (file-name-directory temp-json-path)))
+    (shell-command (format "scp %s/top_square.json %s"
+                           (replace-regexp-in-string "^/ssh:" "" (projectile-project-root))
+                           temp-json-path))
+    (async-shell-command (format "netlistsvg %s" temp-json-path))))
 
 ;; TensorFlow/CUDA
 (setenv "DYLD_LIBRARY_PATH" "/usr/local/cuda/lib")
@@ -924,6 +933,7 @@ static char *gnus-pointer[] = {
  '(verilog-indent-level 4)
  '(verilog-indent-level-declaration 4)
  '(verilog-indent-level-module 4)
+ '(verilog-indent-lists nil)
  '(web-mode-attr-indent-offset 2)
  '(web-mode-code-indent-offset 2)
  '(web-mode-comment-formats '(("java" . "/*") ("php" . "/*") ("javascript" . "//")))
