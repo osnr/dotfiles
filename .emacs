@@ -708,11 +708,15 @@
   (interactive)
   ;; copy json file from chip (projectile-project-root)/top_square.json
   (let* ((temp-json-path (make-temp-file "top_square" nil ".json"))
-         (default-directory (file-name-directory temp-json-path)))
+         (default-directory (file-name-directory temp-json-path))
+         (temp-svg-path (make-temp-file "top_square" nil ".svg")))
     (shell-command (format "scp %s/top_square.json %s"
                            (replace-regexp-in-string "^/ssh:" "" (projectile-project-root))
                            temp-json-path))
-    (async-shell-command (format "netlistsvg %s" temp-json-path))))
+    (shell-command (format "netlistsvg %s -o %s"
+                           temp-json-path
+                           temp-svg-path))
+    (shell-command (format "open -R %s" temp-svg-path))))
 
 ;; TensorFlow/CUDA
 (setenv "DYLD_LIBRARY_PATH" "/usr/local/cuda/lib")
