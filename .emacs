@@ -739,7 +739,6 @@
             (local-unset-key (kbd "C-;"))))
 (defun chip-view-json (arg)
   (interactive)
-  (shell-command "")
   ;; copy json file from chip (projectile-project-root)/arg
   (let* ((temp-json-path (make-temp-file "chip-view" nil ".json"))
          (default-directory (file-name-directory temp-json-path))
@@ -752,6 +751,12 @@
                            temp-json-path
                            temp-svg-path))
     (shell-command (format "open -R %s" temp-svg-path))))
+(defun chip-prog ()
+  (interactive)
+  (let ((bin-file (concat (projectile-project-root) "top_square.bin"))
+        (default-directory "/ssh:old-laptop:/Users/osnr/"))
+    (eshell-command (format "cp %s %s" bin-file default-directory))
+    (eshell-command "/ssh:old-laptop:/Library/Frameworks/Python.framework/Versions/Current/bin/tinyprog -p top_square.bin" t)))
 
 ;; TensorFlow/CUDA
 (setenv "DYLD_LIBRARY_PATH" "/usr/local/cuda/lib")
