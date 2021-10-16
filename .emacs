@@ -308,7 +308,6 @@
     (magit-stage-file target-name)
     (insert (format "#+CAPTION: %s\n[[%s]]" (or link-url target-name) target-name))
     (org-display-inline-images t t)))
-
 (defun newsletter-buffer-p ()
   (string-prefix-p "/Users/osnr/Code/newsletters" (expand-file-name (buffer-file-name))))
 
@@ -601,17 +600,17 @@
 (add-to-list 'auto-mode-alist '("\\.mjs\\'" . js2-mode))
 (add-to-list 'auto-mode-alist '("\\.js\\'" . js2-mode))
 
-(defun hot-reload-tabfs ()
-  ;; copy on top of runtime background.js
-  (copy-file "/Users/osnr/Code/tabfs/extension/background.js" "/Users/osnr/t/runtime/background.js" t)
-  (message "hot reloaded"))
+;; (defun hot-reload-tabfs ()
+;;   ;; copy on top of runtime background.js
+;;   (copy-file "/Users/osnr/Code/tabfs/extension/background.js" "/Users/osnr/t/runtime/background.js" t)
+;;   (message "hot reloaded"))
 
-(add-hook 'js2-mode-hook
-          (defun js2-setup+ ()
-            (when (string-suffix-p "/tabfs/extension/background.js" buffer-file-name)
-              (add-hook 'after-save-hook
-                        #'hot-reload-tabfs
-                        nil 'local))))
+;; (add-hook 'js2-mode-hook
+;;           (defun js2-setup+ ()
+;;             (when (string-suffix-p "/tabfs/extension/background.js" buffer-file-name)
+;;               (add-hook 'after-save-hook
+;;                         #'hot-reload-tabfs
+;;                         nil 'local))))
 
 ;; Clojure
 (add-hook 'clojure-mode-hook
@@ -647,6 +646,40 @@
 (add-hook 'markdown-mode-hook
           (lambda ()
             (turn-on-auto-fill)))
+
+(defun website-insert-image (url &optional link-url)
+  (let* ((static-folder (concat (replace-regexp-in-string "^/Users/osnr/Code/rsnous.com/content/"
+                                                          "/Users/osnr/Code/rsnous.com/static/"
+                                                          (file-name-sans-extension (buffer-file-name)))
+                                "/"))
+         (target-nondirectory-name (read-string (concat "Image name for "
+                                                        (file-name-nondirectory url)
+                                                        ": ")))
+         (target-name (concat static-folder target-nondirectory-name)))
+    ;; create static-folder for post if doesn't exist
+    (unless (file-exists-p static-folder) (make-directory static-folder t))
+
+    (url-copy-file url target-name 1) ; copy image to static-folder. will prompt if overwriting
+    (magit-stage-file target-name)
+    (insert (format "<div class=\"figure\">
+  <img src=\"%s\">
+</div>" target-nondirectory-name))))
+(defun website-buffer-p ()
+  (string-prefix-p "/Users/osnr/Code/rsnous.com" (expand-file-name (buffer-file-name))))
+
+(defun markdown-image-dnd-protocol (url action)
+  (when (and (derived-mode-p 'markdown-mode)
+             (string-match "\\(png\\|jp[e]?g\\)\\>" url))
+    (x-focus-frame nil) ; do i need this?
+    
+    (when (website-buffer-p)
+      (when (string-prefix-p "file:///var/folders/" url)
+        ;; it's from Screenotate; Esc out of Screenotate
+        (shell-command "osascript -e 'tell application \"System Events\" to key code 53'"))
+
+      (website-insert-image url))))
+
+(add-to-list 'dnd-protocol-alist '("\\(png\\|jp[e]?g\\)\\>" . markdown-image-dnd-protocol))
 
 ;; go
 (add-hook 'go-mode-hook
