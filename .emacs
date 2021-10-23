@@ -751,12 +751,13 @@
                            temp-json-path
                            temp-svg-path))
     (shell-command (format "open -R %s" temp-svg-path))))
-(defun chip-prog ()
+(defun chip-prog (&optional arg)
   (interactive)
-  (let ((bin-file (concat (projectile-project-root) "top_square.bin"))
-        (default-directory "/ssh:old-laptop:/Users/osnr/"))
+  (let* ((bin-filename (or arg "top_square.bin"))
+         (bin-file (concat (projectile-project-root) bin-filename))
+         (default-directory "/ssh:old-laptop:/Users/osnr/"))
     (eshell-command (format "cp %s %s" bin-file default-directory))
-    (eshell-command "/ssh:old-laptop:/Library/Frameworks/Python.framework/Versions/Current/bin/tinyprog -p top_square.bin" t)))
+    (eshell-command (format "/ssh:old-laptop:/Library/Frameworks/Python.framework/Versions/Current/bin/tinyprog -p %s" bin-filename) t)))
 
 ;; TensorFlow/CUDA
 (setenv "DYLD_LIBRARY_PATH" "/usr/local/cuda/lib")
