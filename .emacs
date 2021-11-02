@@ -114,12 +114,13 @@
 (defun term-name ()
   "Makes up an appropriate name for an eshell."
   (let* ((parent
-          (condition-case nil
-              (projectile-project-root)
-              (error
-               (if (buffer-file-name)
-                   (file-name-directory (buffer-file-name))
-                 default-directory))))
+          (or (condition-case nil
+                  (projectile-project-root)
+                (error
+                 (if (buffer-file-name)
+                     (file-name-directory (buffer-file-name))
+                   default-directory)))
+              "/Users/osnr"))
          (name (car (last (split-string parent "/" t))))
          (prefix (if current-prefix-arg
                      (concat "*eshell " (prin1-to-string current-prefix-arg) " ") ; so it doesn't get renamed later
@@ -237,6 +238,7 @@
 ;; Projectile
 (projectile-global-mode)
 (global-set-key (kbd "C-c C-f") 'projectile-find-file)
+(global-set-key (kbd "C-c p f") 'projectile-find-file)
 
 
 ;; Ag
@@ -575,21 +577,18 @@
   ;; install it separately via package-install
   ;; `M-x package-install [ret] company`
   (company-mode +1)
-  (prettier-js-mode))
+  (prettier-js-mode +1))
 
 ;; aligns annotation to the right hand side
 (setq company-tooltip-align-annotations t)
 
 ;; formats the buffer before saving
-;; (add-hook 'before-save-hook 'tide-format-before-save)
-
-(add-hook 'typescript-mode-hook #'setup-tide-mode)
+(add-hook 'before-save-hook 'tide-format-before-save)
 (global-set-key (kbd "M-'") #'company-complete)
 
 ;; format options
 (setq tide-format-options '(:placeOpenBraceOnNewLineForFunctions nil))
 
-(require 'web-mode)
 (add-to-list 'auto-mode-alist '("\\.tsx\\'" . web-mode))
 (add-hook 'web-mode-hook
           (lambda ()
@@ -764,7 +763,7 @@
 
 ;; PATH
 (cond 
- ((eq window-system 'ns) ; macosx
+ ((or (eq window-system 'ns) (eq window-system 'mac)) ; macosx
   (progn
       (exec-path-from-shell-initialize)
       ;; Invoke login shells, so that .profile or .bash_profile is read
@@ -789,9 +788,9 @@
 ;; private
 ;; (load-file "~/.emacs.d/private.el")
 
-(load-file "~/Code/dotfiles/realtalk-v2.el")
-(setenv "LUA_PATH" (shell-command-to-string "$SHELL --login -c 'echo -n $LUA_PATH'"))
-(setenv "LUA_CPATH" (shell-command-to-string "$SHELL --login -c 'echo -n $LUA_CPATH'"))
+;; (load-file "~/Code/dotfiles/realtalk-v2.el")
+;; (setenv "LUA_PATH" (shell-command-to-string "$SHELL --login -c 'echo -n $LUA_PATH'"))
+;; (setenv "LUA_CPATH" (shell-command-to-string "$SHELL --login -c 'echo -n $LUA_CPATH'"))
 
 ;; elixir
 (require 'eglot)
@@ -938,7 +937,7 @@ static char *gnus-pointer[] = {
  '(org-latex-listings 'minted)
  '(org-latex-prefer-user-labels t)
  '(package-selected-packages
-   '(command-log-mode markdown-mode spice-mode objc-font-lock lua-mode flycheck-irony irony irony-eldoc arduino-mode moe-theme realgud realgud-lldb forge tramp php-mode racket-mode flycheck-inline eglot elixir-mode hindent glsl-mode carbon-now-sh paredit js2-mode cargo reason-mode csharp-mode wgrep company-sourcekit swift-mode toml-mode yapfify mocha recompile-on-save prettier-js company-jedi csv-mode web-mode-edit-element yaml-mode wgrep-ag vagrant-tramp unfill undo-tree tuareg tern string-inflection ssh smex smartparens rich-minority rcirc-color racer projectile nodejs-repl neotree multi-term mmm-mode image+ haskell-mode go-mode flycheck-rust exec-path-from-shell elpy elm-mode eimp company-racer coffee-mode clojure-mode cdlatex c-eldoc buttercup auctex anzu ag))
+   '(tide command-log-mode markdown-mode spice-mode objc-font-lock lua-mode flycheck-irony irony irony-eldoc arduino-mode moe-theme realgud realgud-lldb forge tramp php-mode racket-mode flycheck-inline eglot elixir-mode hindent glsl-mode carbon-now-sh paredit js2-mode cargo reason-mode csharp-mode wgrep company-sourcekit swift-mode toml-mode yapfify mocha recompile-on-save prettier-js company-jedi csv-mode web-mode-edit-element yaml-mode wgrep-ag vagrant-tramp unfill undo-tree tuareg tern string-inflection ssh smex smartparens rich-minority rcirc-color racer projectile nodejs-repl neotree multi-term mmm-mode image+ haskell-mode go-mode flycheck-rust exec-path-from-shell elpy elm-mode eimp company-racer coffee-mode clojure-mode cdlatex c-eldoc buttercup auctex anzu ag))
  '(projectile-mode-line '(:eval (format " P[%s]" (projectile-project-name))))
  '(python-shell-interpreter "python3")
  '(safe-local-variable-values
