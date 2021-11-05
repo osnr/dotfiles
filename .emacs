@@ -2,9 +2,6 @@
 (require 'package) ;; You might already have this line
 (add-to-list 'package-archives
              '("melpa" . "https://melpa.org/packages/") t)
-(when (< emacs-major-version 24)
-  ;; For important compatibility libraries like cl-lib
-  (add-to-list 'package-archives '("gnu" . "http://elpa.gnu.org/packages/")))
 (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
 (package-initialize) ;; You might already have this line
 
@@ -325,8 +322,6 @@
 
       (newsletter-insert-image url))))
 
-(add-to-list 'dnd-protocol-alist '("\\(png\\|jp[e]?g\\)\\>" . org-image-dnd-protocol))
-
 
 (defun newsletter-embed-tweet ()
   (defun tabfs-eval (tab-path expr &optional all-frames)
@@ -391,7 +386,10 @@
             (turn-on-auto-fill)
             (turn-on-visual-line-mode)
             (local-unset-key (kbd "C-'"))
-            (local-unset-key (kbd "C-,"))))
+            (local-unset-key (kbd "C-,"))
+
+            (make-local-variable 'dnd-protocol-alist)
+            (add-to-list 'dnd-protocol-alist '("\\(png\\|jp[e]?g\\)\\>" . org-image-dnd-protocol))))
 
 (defun newsletter-export-markdown ()
   (defun new-tab (url) (write-region url nil "~/Code/tabfs/fs/mnt/tabs/create"))
@@ -642,9 +640,6 @@
 
 ;; Markdown
 (add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-mode))
-(add-hook 'markdown-mode-hook
-          (lambda ()
-            (turn-on-auto-fill)))
 
 (defun website-insert-image (url &optional link-url)
   (let* ((static-folder (concat (replace-regexp-in-string "^/Users/osnr/Code/rsnous.com/content/"
@@ -678,7 +673,12 @@
 
       (website-insert-image url))))
 
-(add-to-list 'dnd-protocol-alist '("\\(png\\|jp[e]?g\\)\\>" . markdown-image-dnd-protocol))
+(add-hook 'markdown-mode-hook
+          (lambda ()
+            (turn-on-auto-fill)
+
+            (make-local-variable 'dnd-protocol-alist)
+            (add-to-list 'dnd-protocol-alist '("\\(png\\|jp[e]?g\\)\\>" . markdown-image-dnd-protocol))))
 
 ;; go
 (add-hook 'go-mode-hook
@@ -829,7 +829,6 @@
  '(clojure-defun-indents '(add-watch render init-state render-state))
  '(compilation-always-kill t)
  '(compilation-ask-about-save nil)
- '(compilation-error-regexp-alist '(python-tracebacks-and-caml gnu))
  '(custom-enabled-themes '(moe-dark))
  '(custom-safe-themes
    '("27a1dd6378f3782a593cc83e108a35c2b93e5ecc3bd9057313e1d88462701fcd" default))
@@ -937,7 +936,7 @@ static char *gnus-pointer[] = {
  '(org-latex-listings 'minted)
  '(org-latex-prefer-user-labels t)
  '(package-selected-packages
-   '(tide command-log-mode markdown-mode spice-mode objc-font-lock lua-mode flycheck-irony irony irony-eldoc arduino-mode moe-theme realgud realgud-lldb forge tramp php-mode racket-mode flycheck-inline eglot elixir-mode hindent glsl-mode carbon-now-sh paredit js2-mode cargo reason-mode csharp-mode wgrep company-sourcekit swift-mode toml-mode yapfify mocha recompile-on-save prettier-js company-jedi csv-mode web-mode-edit-element yaml-mode wgrep-ag vagrant-tramp unfill undo-tree tuareg tern string-inflection ssh smex smartparens rich-minority rcirc-color racer projectile nodejs-repl neotree multi-term mmm-mode image+ haskell-mode go-mode flycheck-rust exec-path-from-shell elpy elm-mode eimp company-racer coffee-mode clojure-mode cdlatex c-eldoc buttercup auctex anzu ag))
+   (tide verilog-mode command-log-mode markdown-mode spice-mode objc-font-lock lua-mode flycheck-irony irony irony-eldoc arduino-mode moe-theme realgud realgud-lldb forge tramp php-mode racket-mode flycheck-inline eglot elixir-mode hindent glsl-mode carbon-now-sh paredit js2-mode cargo reason-mode csharp-mode wgrep company-sourcekit swift-mode toml-mode yapfify mocha recompile-on-save prettier-js company-jedi csv-mode web-mode-edit-element yaml-mode wgrep-ag vagrant-tramp unfill undo-tree tuareg tern string-inflection ssh smex smartparens rich-minority rcirc-color racer projectile nodejs-repl neotree multi-term mmm-mode image+ haskell-mode go-mode flycheck-rust exec-path-from-shell elpy elm-mode eimp company-racer coffee-mode clojure-mode cdlatex c-eldoc buttercup auctex anzu ag))
  '(projectile-mode-line '(:eval (format " P[%s]" (projectile-project-name))))
  '(python-shell-interpreter "python3")
  '(safe-local-variable-values
@@ -977,7 +976,7 @@ static char *gnus-pointer[] = {
  '(verilog-indent-level 4)
  '(verilog-indent-level-declaration 4)
  '(verilog-indent-level-module 4)
- '(verilog-indent-lists nil)
+ '(verilog-indent-lists t)
  '(web-mode-attr-indent-offset 2)
  '(web-mode-code-indent-offset 2)
  '(web-mode-comment-formats '(("java" . "/*") ("php" . "/*") ("javascript" . "//")))
