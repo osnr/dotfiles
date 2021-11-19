@@ -93,20 +93,23 @@
 (defun term-here ()
   "Opens up a new shell in the directory associated with the current buffer's file."
   (interactive)
-  (let ((buffer-name (term-name)))
-    (-if-let (buffer (get-buffer buffer-name))
-        (-if-let (win (get-buffer-window buffer))
-            (select-window win)
-          (progn
-            (split-window-vertically)
-            (other-window 1)
-            (switch-to-buffer buffer-name)
-            (end-of-buffer)))
-      (progn
-        (split-window-vertically)
-        (other-window 1)
-        (eshell "new")
-        (rename-buffer buffer-name)))))
+  (if (eq major-mode 'eshell-mode)
+      ;; just go to end of buffer if we're already in an eshell buffer
+      (end-of-buffer)
+    (let ((buffer-name (term-name)))
+      (-if-let (buffer (get-buffer buffer-name))
+          (-if-let (win (get-buffer-window buffer))
+              (select-window win)
+            (progn
+              (split-window-vertically)
+              (other-window 1)
+              (switch-to-buffer buffer-name)
+              (end-of-buffer)))
+        (progn
+          (split-window-vertically)
+          (other-window 1)
+          (eshell "new")
+          (rename-buffer buffer-name))))))
 
 (defun term-name ()
   "Makes up an appropriate name for an eshell."
@@ -553,21 +556,16 @@
             (local-unset-key (kbd "C-c C-f"))))
 
 
-;; Flycheck / Flow
+;; Flycheck
 (with-eval-after-load 'flycheck
   (add-hook 'flycheck-mode-hook #'flycheck-inline-mode))
-;; (add-to-list 'load-path "~/.emacs.d/site-lisp/emacs-flycheck-flow")
-;; (require 'flycheck-flow)
-;; (add-hook 'js-mode-hook 'flycheck-mode)
-;; (add-hook 'web-mode-hook 'flycheck-mode)
-;; (flycheck-add-mode 'javascript-flow 'web-mode)
-
 
 ;; TypeScript
 (require 'prettier-js)
 (defun setup-tide-mode ()
   (interactive)
   (tide-setup)
+  (flycheck-add-mode 'typescript-tide 'web-mode)
   (flycheck-mode +1)
   (setq flycheck-check-syntax-automatically '(save mode-enabled))
   (eldoc-mode +1)
@@ -575,17 +573,15 @@
   ;; install it separately via package-install
   ;; `M-x package-install [ret] company`
   (company-mode +1)
-  (prettier-js-mode +1))
+  ;; (prettier-js-mode +1)
+  )
 
 ;; aligns annotation to the right hand side
 (setq company-tooltip-align-annotations t)
 
 ;; formats the buffer before saving
-(add-hook 'before-save-hook 'tide-format-before-save)
+;; (add-hook 'before-save-hook 'tide-format-before-save)
 (global-set-key (kbd "M-'") #'company-complete)
-
-;; format options
-(setq tide-format-options '(:placeOpenBraceOnNewLineForFunctions nil))
 
 (add-to-list 'auto-mode-alist '("\\.tsx\\'" . web-mode))
 (add-to-list 'auto-mode-alist '("\\.ts\\'" . web-mode))
@@ -595,8 +591,8 @@
                       (string-equal "ts" (file-name-extension buffer-file-name)))
               (setup-tide-mode))))
 
-(add-to-list 'auto-mode-alist '("\\.mjs\\'" . js2-mode))
-(add-to-list 'auto-mode-alist '("\\.js\\'" . js2-mode))
+(add-to-list 'auto-mode-alist '("\\.mjs\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.js\\'" . web-mode))
 
 ;; (defun hot-reload-tabfs ()
 ;;   ;; copy on top of runtime background.js
@@ -937,7 +933,7 @@ static char *gnus-pointer[] = {
  '(org-latex-listings 'minted)
  '(org-latex-prefer-user-labels t)
  '(package-selected-packages
-   (tide verilog-mode command-log-mode markdown-mode spice-mode objc-font-lock lua-mode flycheck-irony irony irony-eldoc arduino-mode moe-theme realgud realgud-lldb forge tramp php-mode racket-mode flycheck-inline eglot elixir-mode hindent glsl-mode carbon-now-sh paredit js2-mode cargo reason-mode csharp-mode wgrep company-sourcekit swift-mode toml-mode yapfify mocha recompile-on-save prettier-js company-jedi csv-mode web-mode-edit-element yaml-mode wgrep-ag vagrant-tramp unfill undo-tree tuareg tern string-inflection ssh smex smartparens rich-minority rcirc-color racer projectile nodejs-repl neotree multi-term mmm-mode image+ haskell-mode go-mode flycheck-rust exec-path-from-shell elpy elm-mode eimp company-racer coffee-mode clojure-mode cdlatex c-eldoc buttercup auctex anzu ag))
+   '(flycheck-irony flycheck-inline elixir-mode xterm-color web-mode tide string-inflection smex smartparens realgud-lldb projectile prettier-js moe-theme forge exec-path-from-shell elpy eglot deft anzu ag))
  '(projectile-mode-line '(:eval (format " P[%s]" (projectile-project-name))))
  '(python-shell-interpreter "python3")
  '(safe-local-variable-values
