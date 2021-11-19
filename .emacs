@@ -93,23 +93,23 @@
 (defun term-here ()
   "Opens up a new shell in the directory associated with the current buffer's file."
   (interactive)
-  (if (eq major-mode 'eshell-mode)
-      ;; just go to end of buffer if we're already in an eshell buffer
-      (end-of-buffer)
-    (let ((buffer-name (term-name)))
-      (-if-let (buffer (get-buffer buffer-name))
+  (let ((buffer-name (term-name)))
+    (-if-let (buffer (get-buffer buffer-name))
+        (if (eq buffer (current-buffer))
+            ;; just go to end of buffer if we're already in the target eshell buffer
+            (end-of-buffer)
           (-if-let (win (get-buffer-window buffer))
               (select-window win)
             (progn
               (split-window-vertically)
               (other-window 1)
               (switch-to-buffer buffer-name)
-              (end-of-buffer)))
-        (progn
-          (split-window-vertically)
-          (other-window 1)
-          (eshell "new")
-          (rename-buffer buffer-name))))))
+              (end-of-buffer))))
+      (progn
+        (split-window-vertically)
+        (other-window 1)
+        (eshell "new")
+        (rename-buffer buffer-name)))))
 
 (defun term-name ()
   "Makes up an appropriate name for an eshell."
