@@ -121,11 +121,12 @@
                      (file-name-directory (buffer-file-name))
                    default-directory)))
               "/Users/osnr"))
-         (name (car (last (split-string parent "/" t))))
+         (parent-last (car (last (split-string parent "/" t))))
+         (tramp-context (file-remote-p default-directory 'host))
          (prefix (if current-prefix-arg
                      (concat "*eshell " (prin1-to-string current-prefix-arg) " ") ; so it doesn't get renamed later
                    "*eshell: ")))
-    (concat prefix name "*")))
+    (concat prefix (when tramp-context (concat tramp-context ":")) parent-last "*")))
 
 (global-set-key (kbd "C-'") 'term-here)
 (global-set-key (kbd "C-\"") 'eshell)
@@ -313,17 +314,31 @@
 (defun newsletter-buffer-p ()
   (string-prefix-p "/Users/osnr/Code/newsletters" (expand-file-name (buffer-file-name))))
 
+(defun org-insert-image (url &optional link-url)
+  (let* ((parent-folder (file-name-directory (buffer-file-name)))
+         (file-name (read-string (concat "Image name for "
+                                                   (file-name-nondirectory url)
+                                                   ": ")))
+         (target-name (concat parent-folder
+                              file-name)))
+    
+    (url-copy-file url target-name 1) ; copy image to parent-folder. will prompt if overwriting
+    (magit-stage-file target-name)
+    (insert (format "#+CAPTION: %s\n[[./%s]]" (or link-url target-name)
+                    file-name))
+    (org-display-inline-images t t)))
 (defun org-image-dnd-protocol (url action)
   (when (and (derived-mode-p 'org-mode)
              (string-match "\\(png\\|jp[e]?g\\)\\>" url))
     (x-focus-frame nil) ; do i need this?
-    
-    (when (newsletter-buffer-p)
-      (when (string-prefix-p "file:///var/folders/" url)
-        ;; it's from Screenotate; Esc out of Screenotate
-        (shell-command "osascript -e 'tell application \"System Events\" to key code 53'"))
 
-      (newsletter-insert-image url))))
+    (when (string-prefix-p "file:///var/folders/" url)
+      ;; it's from Screenotate; Esc out of Screenotate
+      (shell-command "osascript -e 'tell application \"System Events\" to key code 53'"))
+
+    (if (newsletter-buffer-p)
+        (newsletter-insert-image url)
+      (org-insert-image url))))
 
 
 (defun newsletter-embed-tweet ()
@@ -524,6 +539,9 @@
              '(c-eldoc-includes . "-I/Users/osnr/dev/cs107e/staff/libpi/include"))
 
 (require 'realgud-lldb)
+
+;; Objective-C++
+(add-to-list 'auto-mode-alist '("\\.mm\\'" . objc-mode))
 
 ;; C++
 (add-hook 'c++-mode-hook 'irony-mode)
@@ -789,6 +807,16 @@
 ;; (setenv "LUA_PATH" (shell-command-to-string "$SHELL --login -c 'echo -n $LUA_PATH'"))
 ;; (setenv "LUA_CPATH" (shell-command-to-string "$SHELL --login -c 'echo -n $LUA_CPATH'"))
 
+(setq lua-indent-nested-block-content-align nil)
+(setq lua-indent-close-paren-align nil)
+
+(defun lua-at-most-one-indent (old-function &rest arguments)
+  (let ((old-res (apply old-function arguments)))
+    (if (> old-res lua-indent-level) lua-indent-level old-res)))
+
+(advice-add #'lua-calculate-indentation-block-modifier
+            :around #'lua-at-most-one-indent)
+
 ;; elixir
 (require 'eglot)
 (add-to-list 'eglot-server-programs '(elixir-mode . ("/Users/osnr/aux/elixir-ls/release/language_server.sh")))
@@ -933,7 +961,7 @@ static char *gnus-pointer[] = {
  '(org-latex-listings 'minted)
  '(org-latex-prefer-user-labels t)
  '(package-selected-packages
-   '(flycheck-irony flycheck-inline elixir-mode xterm-color web-mode tide string-inflection smex smartparens realgud-lldb projectile prettier-js moe-theme forge exec-path-from-shell elpy eglot deft anzu ag))
+   '(elpy lua-mode arduino-mode unfill flycheck-irony flycheck-inline elixir-mode xterm-color web-mode tide string-inflection smex smartparens realgud-lldb projectile prettier-js moe-theme forge exec-path-from-shell eglot deft anzu ag))
  '(projectile-mode-line '(:eval (format " P[%s]" (projectile-project-name))))
  '(python-shell-interpreter "python3")
  '(safe-local-variable-values
