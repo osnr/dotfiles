@@ -676,17 +676,33 @@
 (defun website-buffer-p ()
   (string-prefix-p "/Users/osnr/Code/rsnous.com" (expand-file-name (buffer-file-name))))
 
+(defun doc-insert-image (url &optional link-url)
+  (let* ((static-folder (concat (file-name-directory (buffer-file-name))
+                                "doc/"))
+         (target-nondirectory-name (read-string (concat "Image name for "
+                                                        (file-name-nondirectory url)
+                                                        ": ")))
+         (target-name (concat static-folder target-nondirectory-name)))
+    ;; create static-folder for post if doesn't exist
+    (unless (file-exists-p static-folder) (make-directory static-folder t))
+
+    (url-copy-file url target-name 1) ; copy image to static-folder. will prompt if overwriting
+    (magit-stage-file target-name)
+    (insert (format "<img src=\"doc/%s\" width=\"400\">" target-nondirectory-name))))
+
 (defun markdown-image-dnd-protocol (url action)
   (when (and (derived-mode-p 'markdown-mode)
              (string-match "\\(png\\|jp[e]?g\\)\\>" url))
     (x-focus-frame nil) ; do i need this?
     
-    (when (website-buffer-p)
-      (when (string-prefix-p "file:///var/folders/" url)
-        ;; it's from Screenotate; Esc out of Screenotate
-        (shell-command "osascript -e 'tell application \"System Events\" to key code 53'"))
+    (if (website-buffer-p)
+        (progn 
+          (when (string-prefix-p "file:///var/folders/" url)
+            ;; it's from Screenotate; Esc out of Screenotate
+            (shell-command "osascript -e 'tell application \"System Events\" to key code 53'"))
+          (website-insert-image url))
 
-      (website-insert-image url))))
+      (doc-insert-image url))))
 
 (add-hook 'markdown-mode-hook
           (lambda ()
@@ -849,6 +865,7 @@
  '(ansi-color-names-vector
    ["#212526" "#ff4b4b" "#b4fa70" "#fce94f" "#729fcf" "#e090d7" "#8cc4ff" "#eeeeec"])
  '(asm-comment-char 47)
+ '(auth-source-save-behavior nil)
  '(c-basic-offset 4)
  '(c-block-comment-prefix "  ")
  '(clojure-defun-indents '(add-watch render init-state render-state))
